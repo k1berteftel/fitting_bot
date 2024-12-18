@@ -10,6 +10,7 @@ from aiogram.enums import ParseMode
 
 from database.build import PostgresBuild
 from database.model import Base
+from database.action_data_class import configurate_prices
 from config_data.config import load_config, Config
 from handlers.user_handlers import user_router
 from dialogs import get_dialogs
@@ -40,6 +41,7 @@ async def main():
     #await database.drop_tables(Base)
     #await database.create_tables(Base)
     session = database.session()
+    #await configurate_prices(session)
 
     bot = Bot(token=config.bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()

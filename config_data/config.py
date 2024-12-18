@@ -25,6 +25,10 @@ class Config:
 
 
 def load_config(path: str | None = None) -> Config:
+    """
+
+    :rtype: object
+    """
     env: Env = Env()
     env.read_env(path)
 
