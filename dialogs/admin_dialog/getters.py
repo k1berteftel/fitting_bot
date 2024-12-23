@@ -10,8 +10,46 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database.action_data_class import DataInteraction
 from database.model import DeeplinksTable, AdminsTable
 from utils.build_ids import get_random_id
+from utils.schdulers import send_messages
 from config_data.config import load_config, Config
 from states.state_groups import adminSG
+
+
+async def get_photo_count(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    try:
+        photos = int(text)
+    except Exception:
+        await msg.answer('Вы ввели данные не в том формате, пожалуйста попробуйте снова')
+        return
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    await session.update_sub_photos(photos)
+    await dialog_manager.switch_to(adminSG.subs_menu)
+
+
+async def sub_toggle(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    terms = await session.get_sub_terms()
+    if clb.data.startswith('watermark'):
+        if terms.watermark:
+            await session.update_sub_terms(watermark=False)
+        else:
+            await session.update_sub_terms(watermark=True)
+    else:
+        if terms.background:
+            await session.update_sub_terms(background=False)
+        else:
+            await session.update_sub_terms(background=True)
+    await dialog_manager.switch_to(adminSG.subs_menu)
+
+
+async def sub_menu_getter(dialog_manager: DialogManager, **kwargs):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    terms = await session.get_sub_terms()
+    return {
+        'watermark': '✅' if terms.watermark else '❌',
+        'background': '✅' if terms.background else '❌',
+        'photos': terms.photos
+    }
 
 
 async def get_gen_amount_getter(dialog_manager: DialogManager, **kwargs):
@@ -37,15 +75,19 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
     active = 0
     today = 0
     activity = 0
+    subs = 0
     for user in users:
         if user.active:
             active += 1
         if user.entry > datetime.datetime.today() - datetime.timedelta(days=1):
             today += 1
-        if user.activity:
+        if user.activity > datetime.datetime.today() - datetime.timedelta(days=1):
             activity += 1
+        if user.sub:
+            subs += 1
     text = (f'Всего юзеров в боте: {len(users)}\nИз них:\n{active} Активных\n{len(users) - active}\n\n'
-            f'Зашло в бота сегодня: {today}\nПровзаимодействовало с ботом сегодня: {activity}')
+            f'Зашло в бота сегодня: {today}\nПровзаимодействовало с ботом сегодня: {activity}\n'
+            f'Приобрело подписку: {subs}')
     await clb.message.answer(text=text)
 
 
@@ -53,7 +95,7 @@ async def get_cloth_link(msg: Message, widget: ManagedTextInput, dialog_manager:
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     await msg.delete()
     if not text.startswith('http'):
-        await msg.answer('Вы ввели не ссылку на фото, пожалуйста попробуйте снова')
+        await msg.answer('Вы ввели не ту ссылку на фото, пожалуйста попробуйте снова')
         return
     await session.add_photo(text, 'cloth')
     await dialog_manager.switch_to(adminSG.cloth_photos)
@@ -358,7 +400,22 @@ async def deeplink_menu_getter(dialog_manager: DialogManager, **kwargs):
     links: list[DeeplinksTable] = await session.get_deeplinks()
     text = ''
     for link in links:
-        text += f'https://t.me/AidaLook_bot?start={link.link}: {link.entry}\n'  # Получить ссылку на бота и поменять
+        users = await session.get_users_by_join_link(link.link)
+        active = 0
+        today = 0
+        activity = 0
+        subs = 0
+        for user in users:
+            if user.active:
+                active += 1
+            if user.entry > datetime.datetime.today() - datetime.timedelta(days=1):
+                today += 1
+            if user.activity > datetime.datetime.today() - datetime.timedelta(days=1):
+                activity += 1
+            if user.sub:
+                subs += 1
+        text += (f'({link.id})https://t.me/AidaLook_bot?start={link.link}: {link.entry}\nЗашло: {len(users)}'
+                 f', активных: {active}, зашло сегодня: {today}, приобрели подписку: {subs}, активны в последние 24 часа: {activity}\n')
     return {'links': text}
 
 
@@ -380,7 +437,7 @@ async def del_deeplink_getter(dialog_manager: DialogManager, **kwargs):
     links: list[DeeplinksTable] = await session.get_deeplinks()
     buttons = []
     for link in links:
-        buttons.append((f'{link.link}: {link.entry}', link.link))
+        buttons.append((f'({link.id}){link.link}: {link.entry}', link.link))
     return {'items': buttons}
 
 
@@ -485,5 +542,12 @@ async def start_malling(clb: CallbackQuery, widget: Button, dialog_manager: Dial
                 await session.set_active(user.user_id, 0)
         await clb.answer('Рассылка прошла успешно')
     else:
-        pass
+        today = datetime.datetime.today()
+        date = datetime.datetime(year=today.year, month=today.month, day=today.day, hour=time[0], minute=time[1])
+        scheduler.add_job(
+            func=send_messages,
+            args=[bot, session, InlineKeyboardMarkup(inline_keyboard=[keyboard]) if keyboard else None, message],
+            next_run_time=date
+        )
     await dialog_manager.switch_to(adminSG.start)
+

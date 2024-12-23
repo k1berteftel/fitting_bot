@@ -1,5 +1,6 @@
 import asyncio
 from aiogram import Bot
+from aiogram.types import InlineKeyboardMarkup
 from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database.action_data_class import DataInteraction
@@ -31,3 +32,18 @@ async def check_sub(bot: Bot, user_id: int, session: DataInteraction, scheduler:
         scheduler.remove_job(str(user_id))
 
 
+async def send_messages(bot: Bot, session: DataInteraction, keyboard: InlineKeyboardMarkup|None, message: list[int]):
+    users = await session.get_users()
+    for user in users:
+        try:
+            await bot.copy_message(
+                chat_id=user.user_id,
+                from_chat_id=message[1],
+                message_id=message[0],
+                reply_markup=keyboard
+            )
+            if user.active == 0:
+                await session.set_active(user.user_id, 1)
+        except Exception as err:
+            print(err)
+            await session.set_active(user.user_id, 0)

@@ -25,9 +25,11 @@ async def concatenate_images(cloth: str | Path, model: str | Path, category: str
     print(model, cloth)
     url = 'https://api.fashn.ai/v1/run'
     if isinstance(model, Path):
-        model = f'ipV4:port/{model}'#base64.b64encode(open(model, 'rb').read()).decode('utf-8')
+        encoded = base64.b64encode(open(model, 'rb').read()).decode('utf-8')
+        model = f'data:image/jpg;base64, {encoded}'
     if isinstance(cloth, Path):
-        cloth = f'ipV4:port/{cloth}'#base64.b64encode(open(cloth, 'rb').read()).decode('utf-8')
+        encoded = base64.b64encode(open(cloth, 'rb').read()).decode('utf-8')
+        cloth = f'data:image/jpg;base64, {encoded}'
     params = {
         "model_image": model,
         "garment_image": cloth,
@@ -37,7 +39,7 @@ async def concatenate_images(cloth: str | Path, model: str | Path, category: str
     params.update(kwargs)
     print('start request')
     async with ClientSession() as session:
-        async with session.post(url, headers=headers, data=json.dumps(params)) as response:
+        async with session.post(url, headers=headers, json=params) as response:
             data = await response.json()
             if not data['id']:
                 raise Exception(data['error'])
@@ -83,4 +85,4 @@ async def add_background(image: str, bg_image: str, user_id: int) -> str:
 
 
 
-#asyncio.run(concatenate_images(Path('model_1236300146.jpg'), Path('cloth_1236300146.jpg'), 'tops'))
+#asyncio.run(concatenate_images(Path('cloth_1236300146.jpg'), Path('model_1236300146.jpg'), 'tops'))

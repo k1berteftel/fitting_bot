@@ -1,6 +1,8 @@
 import uuid
+import os
+from aiohttp import ClientSession
 from aiogram import Bot
-from aiogram.types import CallbackQuery, User, Message, ContentType
+from aiogram.types import CallbackQuery, User, Message, ContentType, FSInputFile
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.kbd import Button, Select, ManagedMultiselect
@@ -9,14 +11,221 @@ from yookassa import Configuration, Payment
 from yookassa.payment import PaymentResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from utils.api_methods import add_background
 from utils.schdulers import check_sub
 from database.action_data_class import DataInteraction
-from config_data.config import load_config, Config
 from states.state_groups import profileSG
 
 
 Configuration.account_id = 286317
 Configuration.secret_key = 'live_ZWfufpazd2XRr68N5w8U6gLel2YnN4CQXFyPlJWXPN0'
+
+
+async def get_bg_image(msg: Message, widget: MessageInput, dialog_manager: DialogManager):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    bot: Bot = dialog_manager.middleware_data.get('bot')
+    file = await bot.get_file(msg.photo[-1].file_id)
+    await bot.download_file(file.file_path, f'bg_image_{msg.from_user.id}.png')
+    bg_image = f'bg_image_{msg.from_user.id}.png'
+    image = dialog_manager.dialog_data.get('image')
+    if not image.startswith('http'):
+        bot: Bot = dialog_manager.middleware_data.get('bot')
+        file = await bot.get_file(image)
+        await bot.download_file(file.file_path, f'image_{msg.from_user.id}.png')
+    else:
+        try:
+            async with ClientSession(trust_env=True) as client:
+                async with client.get(image) as resp:
+                    image = resp.content
+                    with open(f'image_{msg.from_user.id}.png', 'wb') as file:
+                        file.write(await image.read())
+        except Exception as err:
+            print(err)
+            await msg.answer('Извините, но фото в котором надо поменять фон не подлежит скачиванию, '
+                             'попробуйте выбрать или загрузить другую фотографию')
+            await dialog_manager.switch_to(profileSG.photos_menu)
+            return
+    image = f'image_{msg.from_user.id}.png'
+    try:
+        result = await add_background(
+            image=image,
+            bg_image=bg_image,
+            user_id=msg.from_user.id
+        )
+    except Exception as err:
+        print(err)
+        await msg.answer('Во время замены фона что-то пошло не так, '
+                         'пожалуйста попробуйте еще раз или обратитесь в поддержку')
+        dialog_manager.dialog_data.clear()
+        await dialog_manager.switch_to(profileSG.photos_menu)
+        return
+    await msg.answer('Ваши результаты замены фона')
+    await msg.answer_photo(photo=FSInputFile(path=result))
+    try:
+        os.remove(bg_image)
+        os.remove(image)
+    except Exception as err:
+        print(err)
+    price = await session.get_gen_amount()
+    await session.update_user_generations(msg.from_user.id, -price)
+    dialog_manager.dialog_data.clear()
+    await dialog_manager.switch_to(profileSG.photos_menu)
+
+
+async def get_bg_image_link(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    if not text.startswith('http'):
+        await msg.answer('Вы ввели не ссылку на фото, пожалуйста попробуйте снова')
+        return
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    await msg.answer('Начался процесс замены фона, пожалуйста ожидайте')
+    try:
+        async with ClientSession() as client:
+            async with client.get(text) as resp:
+                image = resp.content
+                with open(f'bg_image_{msg.from_user.id}.png', 'wb') as file:
+                    file.write(await image.read())
+        bg_image = f'bg_image_{msg.from_user.id}.png'
+    except Exception as err:
+        print(err)
+        await msg.answer('Извините, но фото для замены фона не подлежит скачиванию, '
+                         'попробуйте выбрать или загрузить другую фотографию')
+        await dialog_manager.switch_to(profileSG.bg_photo_get)
+        return
+    image = dialog_manager.dialog_data.get('image')
+    if not image.startswith('http'):
+        bot: Bot = dialog_manager.middleware_data.get('bot')
+        file = await bot.get_file(image)
+        await bot.download_file(file.file_path, f'image_{msg.from_user.id}.png')
+    else:
+        try:
+            async with ClientSession(trust_env=True) as client:
+                async with client.get(image) as resp:
+                    image = resp.content
+                    with open(f'image_{msg.from_user.id}.png', 'wb') as file:
+                        file.write(await image.read())
+        except Exception as err:
+            print(err)
+            await msg.answer('Извините, но фото в котором надо поменять фон не подлежит скачиванию, '
+                             'попробуйте выбрать или загрузить другую фотографию')
+            await dialog_manager.switch_to(profileSG.photos_menu)
+            return
+    image = f'image_{msg.from_user.id}.png'
+    try:
+        result = await add_background(
+            image=image,
+            bg_image=bg_image,
+            user_id=msg.from_user.id
+        )
+    except Exception as err:
+        print(err)
+        await msg.answer('Во время замены фона что-то пошло не так, '
+                         'пожалуйста попробуйте еще раз или обратитесь в поддержку')
+        dialog_manager.dialog_data.clear()
+        await dialog_manager.switch_to(profileSG.photos_menu)
+        return
+    await msg.answer('Ваши результаты замены фона')
+    await msg.answer_photo(photo=FSInputFile(path=result))
+    try:
+        os.remove(bg_image)
+        os.remove(image)
+    except Exception as err:
+        print(err)
+    price = await session.get_gen_amount()
+    await session.update_user_generations(msg.from_user.id, -price)
+    dialog_manager.dialog_data.clear()
+    await dialog_manager.switch_to(profileSG.photos_menu)
+
+
+async def get_image(msg: Message, widget: MessageInput, dialog_manager: DialogManager):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    user = await session.get_user(msg.from_user.id)
+    price = await session.get_gen_amount()
+    if user.sub and user.generations < price:
+        await msg.answer('К сожалению у вас не достаточно яблок для добавления заднего фона')
+        return
+    terms = await session.get_sub_terms()
+    if not user.sub and not terms.background:
+        await msg.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
+        return
+    if not user.sub and user.generations < price:
+        await msg.answer('К сожалению не хватает яблок для примерки')
+        return
+    dialog_manager.dialog_data['image'] = msg.photo[-1].file_id
+    await dialog_manager.switch_to(profileSG.bg_photo_get)
+
+
+async def get_image_link(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    if not text.startswith('http'):
+        await msg.answer('Вы ввели не ссылку на фото, пожалуйста попробуйте снова')
+        return
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    user = await session.get_user(msg.from_user.id)
+    price = await session.get_gen_amount()
+    if user.sub and user.generations < price:
+        await msg.answer('К сожалению у вас не достаточно яблок для добавления заднего фона')
+        return
+    terms = await session.get_sub_terms()
+    if not user.sub and not terms.background:
+        await msg.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
+        return
+    if not user.sub and user.generations < price:
+        await msg.answer('К сожалению не хватает яблок для примерки')
+        return
+    dialog_manager.dialog_data['image'] = text
+    await dialog_manager.switch_to(profileSG.bg_photo_get)
+
+
+async def get_bg_image_switcher(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    user = await session.get_user(clb.from_user.id)
+    price = await session.get_gen_amount()
+    if user.sub and user.generations < price:
+        await clb.message.answer('К сожалению у вас не достаточно яблок для добавления заднего фона')
+        return
+    terms = await session.get_sub_terms()
+    if not user.sub and not terms.background:
+        await clb.message.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
+        return
+    if not user.sub and user.generations < price:
+        await clb.message.answer('К сожалению не хватает яблок для примерки')
+        return
+    photo_id = dialog_manager.dialog_data.get('id')
+    photo = await session.get_user_photo(photo_id)
+    dialog_manager.dialog_data['image'] = photo.photo
+    await dialog_manager.switch_to(profileSG.bg_photo_get)
+
+
+async def get_link(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    await msg.delete()
+    if not text.startswith('http'):
+        await msg.answer('Вы ввели не ссылку на фото, пожалуйста попробуйте снова')
+        return
+    await session.add_user_photo(msg.from_user.id, text)
+    await dialog_manager.switch_to(profileSG.photos_menu)
+
+
+async def get_photo(msg: Message, widget: MessageInput, dialog_manager: DialogManager):
+    await msg.delete()
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    await session.add_user_photo(msg.from_user.id, msg.photo[-1].file_id)
+    await dialog_manager.switch_to(profileSG.photos_menu)
+
+
+async def add_photo_switcher(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    user = await session.get_user(clb.from_user.id)
+    photos = await session.get_user_photos(clb.from_user.id)
+    if user.sub:
+        terms = await session.get_sub_terms()
+        if len(photos) >= terms.photos:
+            await clb.answer(f'Вы можете иметь единовременно не более {terms.photos} фото моделей')
+            return
+    else:
+        if len(photos) >= 2:
+            await clb.answer('Вы можете иметь единовременно не более 2 фото моделей')
+            return
+    await dialog_manager.switch_to(profileSG.add_photo)
 
 
 async def photos_menu_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
@@ -34,10 +243,20 @@ async def photos_menu_getter(event_from_user: User, dialog_manager: DialogManage
         not_last = False
     if not photos:
         photo = False
-    else:
+    elif not photos[page].photo.startswith('http'):
         photo = MediaAttachment(type=ContentType.PHOTO, file_id=MediaId(file_id=photos[page].photo))
         dialog_manager.dialog_data['id'] = photos[page].id
+    else:
+        photo = MediaAttachment(type=ContentType.PHOTO, url=photos[page].photo)
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    user = await session.get_user(event_from_user.id)
+    sub = '❌'
+    if user.sub:
+        terms = await session.get_sub_terms()
+        if terms.background:
+            sub = '✅'
     return {
+        'sub': sub,
         'media': photo,
         'not_first': not_first,
         'not_last': not_last
@@ -72,7 +291,7 @@ async def choose_sub_menu_getter(dialog_manager: DialogManager, **kwargs):
     rates = await session.get_rates_by_category('sub')
     buttons = []
     for rate in rates:
-        buttons.append((f'{rate.amount} мес - {rate.price} руб', rate.id))
+        buttons.append((f'⚡️{rate.amount} мес - {rate.price} руб', rate.id))
     return {
         'items': buttons
     }
@@ -92,7 +311,7 @@ async def generations_menu_getter(dialog_manager: DialogManager, **kwargs):
     rates = await session.get_rates_by_category('gen')
     buttons = []
     for rate in rates:
-        buttons.append((f'{rate.amount} - {rate.price} руб', rate.id))
+        buttons.append((f'⚡️{rate.amount} - {rate.price} руб', rate.id))
     return {
         'items': buttons
     }
@@ -105,17 +324,7 @@ async def start_getter(event_from_user: User, dialog_manager: DialogManager, **k
         'username': user.username,
         'generations': user.generations,
         'sub': f' до {user.sub}' if user.sub else 'Отсутствует',
-        'status': '❌' if not user.notifications else '✅'
     }
-
-
-async def notifications_toggle(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
-    session: DataInteraction = dialog_manager.middleware_data.get('session')
-    user = await session.get_user(clb.from_user.id)
-    if user.notifications:
-        await session.set_notifications(clb.from_user.id, False)
-    else:
-        await session.set_notifications(clb.from_user.id, True)
 
 
 async def payment_menu_getter(dialog_manager: DialogManager, **kwargs):
@@ -149,6 +358,7 @@ async def check_payment(clb: CallbackQuery, widget: Button, dialog_manager: Dial
         scheduler: AsyncIOScheduler = dialog_manager.middleware_data.get('scheduler')
         bot: Bot = dialog_manager.middleware_data.get('bot')
         if dialog_manager.dialog_data.get('type') == 'gen':
+            await clb.answer(f'Оплата была успешно произведена, к вам на баланс было зачислено {amount} яблок')
             await session.update_user_generations(clb.from_user.id, amount)
             await dialog_manager.switch_to(profileSG.generations_menu)
         else:
@@ -180,7 +390,7 @@ async def ref_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
     return {
         'refs': user.refs,
         'prizes': user.generations,
-        'link': f't.me/AidaLook_bot?start={user.deeplink}'
+        'link': f'http://t.me/share/url?url=t.me/AidaLook_bot?start={user.deeplink}'
     }
 
 

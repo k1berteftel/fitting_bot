@@ -13,14 +13,38 @@ admin_dialog = Dialog(
     Window(
         Const('Админ панель'),
         Button(Const('📊 Получить статистику'), id='get_static', on_click=getters.get_static),
+        SwitchTo(Const('Управление привилегиями подписки'), id='sub_menu_switcher', state=adminSG.subs_menu),
         SwitchTo(Const('Управление тарифами'), id='rates_menu_switcher', state=adminSG.rates_menu),
         SwitchTo(Const('Поменять стоимость генерации в яблоках'), id='get_gen_amount', state=adminSG.get_gen_amount),
         SwitchTo(Const('Управление кодами ваучера'), id='vouchers_menu', state=adminSG.vouchers_menu),
         SwitchTo(Const('Управление фото'), id='photos_menu_switcher', state=adminSG.photos_menu),
         SwitchTo(Const('🔗 Управление диплинками'), id='deeplinks_menu_switcher', state=adminSG.deeplink_menu),
         SwitchTo(Const('👥 Управление админами'), id='admin_menu_switcher', state=adminSG.admin_menu),
+        SwitchTo(Const('Сделать рассылку'), id='get_mail_switcher', state=adminSG.get_mail),
         Cancel(Const('Назад'), id='close_admin'),
         state=adminSG.start
+    ),
+    Window(
+        Const('Меню управления привилегиями подписки'),
+        Format('Условия подписки:\n - Наличие водяного знака: {watermark}\n - Замена фона: {background}'
+               '\n - Кол-во доп фото моделей: {photos}'),
+        Column(
+            Button(Format('{watermark}Водяной знак'), id='watermark_toggle', on_click=getters.sub_toggle),
+            Button(Format('{background}Замена фона'), id='background_toggle', on_click=getters.sub_toggle),
+            SwitchTo(Const('Поменять кол-во фото'), id='get_photo_count', state=adminSG.get_photos_count),
+        ),
+        SwitchTo(Const('🔙 Назад'), id='back', state=adminSG.start),
+        getter=getters.sub_menu_getter,
+        state=adminSG.subs_menu
+    ),
+    Window(
+        Const('Введите кол-во допустимых фото моделей'),
+        TextInput(
+            id='get_photos_count',
+            on_success=getters.get_photo_count
+        ),
+        SwitchTo(Const('Назад'), id='back_subs_menu', state=adminSG.subs_menu),
+        state=adminSG.get_photos_count
     ),
     Window(
         Format('Стоимость одной генерации в яблоках: {price}, чтобы поставить новую стоимость введите кол-во'
@@ -29,6 +53,7 @@ admin_dialog = Dialog(
             id='get_get_amount',
             on_success=getters.get_gen_amount
         ),
+        SwitchTo(Const('🔙 Назад'), id='back', state=adminSG.start),
         getter=getters.get_gen_amount_getter,
         state=adminSG.get_gen_amount
     ),
@@ -375,8 +400,7 @@ admin_dialog = Dialog(
         state=adminSG.get_mail
     ),
     Window(
-        Const('Введите время через которое сообщение должно удалиться у всех пользователей\n'
-              'Введите текст в формате: 02:30 (2 часа: 30 минут)'),
+        Const('Введите время в которое сообщение должно разослаться всем юзерам'),
         TextInput(
             id='get_time',
             on_success=getters.get_time

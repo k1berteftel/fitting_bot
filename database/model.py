@@ -19,10 +19,11 @@ class UsersTable(Base):
     generations: Mapped[int] = mapped_column(Integer, default=0)
     sub: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
     entry: Mapped[datetime] = mapped_column(DateTime, default=datetime.today())
-    notifications: Mapped[bool] = mapped_column(Boolean, default=True)
     deeplink: Mapped[str] = mapped_column(VARCHAR)
+    join: Mapped[str] = mapped_column(VARCHAR, nullable=True, default=None) # диплинк по которому юзер первый раз зашел в бота
     refs: Mapped[int] = mapped_column(BigInteger, default=0)  # Кол-во зашедших рефералов
     active: Mapped[int] = mapped_column(Integer, default=1)
+    activity: Mapped[DateTime] = mapped_column(DateTime, default=datetime.today())
 
 
 class UserPhotosTable(Base):
@@ -101,3 +102,13 @@ class PriceTable(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     amount: Mapped[int] = mapped_column(Integer)
+
+
+class SubTermsTable(Base):
+    __tablename__ = 'subterms'
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+
+    watermark: Mapped[bool] = mapped_column(Boolean)
+    background: Mapped[bool] = mapped_column(Boolean)
+    photos: Mapped[int] = mapped_column(Integer, default=3)

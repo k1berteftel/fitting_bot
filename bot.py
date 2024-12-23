@@ -7,6 +7,7 @@ from aiogram import Bot, Dispatcher
 from aiogram_dialog import setup_dialogs
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from database.build import PostgresBuild
 from database.model import Base
@@ -15,6 +16,7 @@ from config_data.config import load_config, Config
 from handlers.user_handlers import user_router
 from dialogs import get_dialogs
 from middlewares.transfer_middleware import TransferObjectsMiddleware
+from middlewares.condition_middleware import RemindMiddleware
 
 
 module_path = inspect.getfile(inspect.currentframe())
@@ -43,6 +45,9 @@ async def main():
     session = database.session()
     #await configurate_prices(session)
 
+    scheduler: AsyncIOScheduler = AsyncIOScheduler()
+    scheduler.start()
+
     bot = Bot(token=config.bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
 
@@ -51,13 +56,14 @@ async def main():
 
     # подключаем middleware
     dp.update.middleware(TransferObjectsMiddleware())
+    dp.update.middleware(RemindMiddleware())
 
     # запуск
     await bot.delete_webhook(drop_pending_updates=True)
     setup_dialogs(dp)
     logger.info('Bot start polling')
 
-    await dp.start_polling(bot, _session=session)
+    await dp.start_polling(bot, _session=session, _scheduler=scheduler)
 
 
 if __name__ == "__main__":

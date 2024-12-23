@@ -5,7 +5,8 @@ from dateutil.relativedelta import relativedelta
 from datetime import datetime
 
 from database.model import (UsersTable, UserPhotosTable, DeeplinksTable, AdminsTable,
-                            OneTimeLinksIdsTable, RatesTable, VouchersTable, UserVouchersTable, PhotosTable, PriceTable)
+                            OneTimeLinksIdsTable, RatesTable, VouchersTable, UserVouchersTable, PhotosTable, PriceTable,
+                            SubTermsTable)
 from utils.build_ids import get_random_id
 
 
@@ -13,6 +14,10 @@ async def configurate_prices(sessions: async_sessionmaker):
     async with sessions() as session:
         await session.execute(insert(PriceTable).values(
             amount=5
+        ))
+        await session.execute(insert(SubTermsTable).values(
+            watermark=False,
+            background=True
         ))
         await session.commit()
 
@@ -50,7 +55,22 @@ class DataInteraction():
             await session.commit()
             return True
 
-    async def add_user(self, user_id: int, username: str, name: str):
+    async def add_entry(self, link: str):
+        async with self._sessions() as session:
+            await session.execute(update(DeeplinksTable).where(DeeplinksTable.link == link).values(
+                entry=DeeplinksTable.entry+1
+            ))
+            await session.commit()
+
+    async def add_refs(self, link: str):
+        async with self._sessions() as session:
+            await session.execute(update(UsersTable).where(UsersTable.deeplink == link).values(
+                refs=UsersTable.refs + 1,
+                generations=UsersTable.generations + 5
+            ))
+            await session.commit()
+
+    async def add_user(self, user_id: int, username: str, name: str, join: str|None):
         if await self.check_user(user_id):
             return
         async with self._sessions() as session:
@@ -58,7 +78,8 @@ class DataInteraction():
                 user_id=user_id,
                 username=username,
                 name=name,
-                deeplink=get_random_id()
+                deeplink=get_random_id(),
+                join=join
             ))
             await session.commit()
 
@@ -122,6 +143,11 @@ class DataInteraction():
             result = await session.scalar(select(PriceTable.amount))
         return result
 
+    async def get_sub_terms(self):
+        async with self._sessions() as session:
+            result = await session.scalar(select(SubTermsTable))
+        return result
+
     async def get_photos_by_category(self, category: str):
         async with self._sessions() as session:
             result = await session.scalars(select(PhotosTable.photo).where(PhotosTable.category == category))
@@ -131,6 +157,11 @@ class DataInteraction():
         async with self._sessions() as session:
             result = await session.scalar(select(VouchersTable.amount).where(VouchersTable.code == code))
         return result
+
+    async def get_users_by_join_link(self, deeplink: str):
+        async with self._sessions() as session:
+            result = await session.scalars(select(UsersTable).where(UsersTable.join == deeplink))
+        return result.fetchall()
 
     async def get_vouchers(self):
         async with self._sessions() as session:
@@ -177,12 +208,10 @@ class DataInteraction():
             result = await session.scalars(select(UserPhotosTable).where(UserPhotosTable.user_id == user_id))
         return result.fetchall()
 
-    async def add_refs(self, link: str):
+    async def get_user_photo(self, id: int):
         async with self._sessions() as session:
-            await session.execute(update(UsersTable).where(UsersTable.deeplink == link).values(
-                refs=UsersTable.refs + 1
-            ))
-            await session.commit()
+            result = await session.scalar(select(UserPhotosTable).where(UserPhotosTable.id == id))
+        return result
 
     async def update_user_generations(self, user_id: int, amount: int):
         async with self._sessions() as session:
@@ -191,17 +220,17 @@ class DataInteraction():
             ))
             await session.commit()
 
-    async def set_notifications(self, user_id: int, notification: bool):
-        async with self._sessions() as session:
-            await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
-                notifications=notification
-            ))
-            await session.commit()
-
     async def set_active(self, user_id: int, active: int):
         async with self._sessions() as session:
             await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
                 active=active
+            ))
+            await session.commit()
+
+    async def set_activity(self, user_id: int):
+        async with self._sessions() as session:
+            await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
+                activity=datetime.today()
             ))
             await session.commit()
 
@@ -226,17 +255,36 @@ class DataInteraction():
             ))
             await session.commit()
 
-    async def update_user_sub(self, user_id: int, months: int):
+    async def update_sub_photos(self, photos):
+        async with self._sessions() as session:
+            await session.execute(update(SubTermsTable).values(
+                photos=photos
+            ))
+            await session.commit()
+
+    async def update_sub_terms(self, **kwargs):
+        async with self._sessions() as session:
+            await session.execute(update(SubTermsTable).values(
+                kwargs
+            ))
+            await session.commit()
+
+    async def update_user_sub(self, user_id: int, months: int|None):
+        if months is None:
+            async with self._sessions() as session:
+                await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
+                    sub=months
+                ))
         if (await self.get_user(user_id)).sub:
             async with self._sessions() as session:
                 await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
-                    sub=UsersTable.sub + relativedelta(months=3)
+                    sub=UsersTable.sub + relativedelta(months=months)
                 ))
                 await session.commit()
         else:
             async with self._sessions() as session:
                 await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
-                    sub=datetime.today() + relativedelta(months=3)
+                    sub=datetime.today() + relativedelta(months=months)
                 ))
                 await session.commit()
 

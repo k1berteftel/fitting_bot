@@ -48,6 +48,8 @@ class adminSG(StatesGroup):
     cloth_photos = State()
     add_cloth_photo = State()
     get_gen_amount = State()
+    subs_menu = State()
+    get_photos_count = State()
 
 
 class profileSG(StatesGroup):
@@ -59,5 +61,8 @@ class profileSG(StatesGroup):
     choose_sub_menu = State()
     ref_menu = State()
     get_voucher = State()
+    images_menu = State()
+    bg_photo_get = State()
     photos_menu = State()
+    add_photo = State()
     help_menu = State()

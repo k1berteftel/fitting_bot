@@ -12,22 +12,20 @@ from states.state_groups import profileSG
 
 profile_dialog = Dialog(
     Window(
-        Format('<b>Ваш username:</b> {username}\n'
-               '<b>Доступные генерации:</b> {generations}\n'
-               '<b>Подписка:</b> {sub}'),
+        Format('<b>👤 Профиль</b>\n\n<b>Юзернейм:</b> {username}\n<b>🍎 Баланс яблок:</b> {generations}\n'
+                   '<b>✨ Подписка:</b> {sub}'),
         Column(
-            SwitchTo(Const('Приобрести генерации'), id='generations_menu_switcher', state=profileSG.generations_menu),
-            SwitchTo(Const('Управление подпиской'), id='sub_menu_switcher', state=profileSG.sub_menu),
-            SwitchTo(Const('Реферальная программа'), id='ref_menu_switcher', state=profileSG.ref_menu),
-            SwitchTo(Const('Управление фотографиями'), id='photos_menu_switcher', state=profileSG.photos_menu),
-            Button(Format('{status}|Уведомления'), id='notifications_toggle', on_click=getters.notifications_toggle),
+            SwitchTo(Const('💰Приобрести яблоки'), id='generations_menu_switcher', state=profileSG.generations_menu),
+            SwitchTo(Const('✨Управление подпиской'), id='sub_menu_switcher', state=profileSG.sub_menu),
+            SwitchTo(Const('🏦Реферальная программа'), id='ref_menu_switcher', state=profileSG.ref_menu),
+            SwitchTo(Const('🖼Управление фотографиями'), id='photos_menu_switcher', state=profileSG.photos_menu),
         ),
-        Cancel(Const('Назад'), id='close_dialog'),
+        Cancel(Const('🔙Назад'), id='close_dialog'),
         getter=getters.start_getter,
         state=profileSG.start
     ),
     Window(
-        Const('Выберите тариф генераций'),
+        Const('<b>Выберите тариф генераций</b>'),
         Group(
             Select(
                 Format('{item[0]}'),
@@ -38,27 +36,28 @@ profile_dialog = Dialog(
             ),
             width=2
         ),
-        SwitchTo(Const('Ввести код ваучера'), id='get_voucher_switcher', state=profileSG.get_voucher),
-        SwitchTo(Const('Назад'), id='back', state=profileSG.start),
+        SwitchTo(Const('🔼Ввести код ваучера'), id='get_voucher_switcher', state=profileSG.get_voucher),
+        SwitchTo(Const('🔙Назад'), id='back', state=profileSG.start),
         getter=getters.generations_menu_getter,
         state=profileSG.generations_menu
     ),
     Window(
-        Const('Пожалуйста произведите оплату по данной ссылке и потом обязательно нажмите на кнопку проверки оплаты'),
+        Const('Пожалуйста произведите оплату по данной ссылке и потом ❗️<b>обязательно</b>❗️ '
+              'нажмите на кнопку проверки оплаты'),
         Column(
-            Url(Const('Оплатить'), id='payment_link', url=Format('{url}')),
+            Url(Const('🔗Оплатить'), id='payment_link', url=Format('{url}')),
             Button(Const('Проверить оплату'), id='check_payment', on_click=getters.check_payment),
         ),
-        SwitchTo(Const('Назад'), id='back_generations_menu', state=profileSG.generations_menu),
+        SwitchTo(Const('🔙Назад'), id='back_generations_menu', state=profileSG.generations_menu),
         getter=getters.payment_menu_getter,
         state=profileSG.payment
     ),
     Window(
         Format('<b>Подписка:</b> {sub}\n\nУсловия привилегии подписки'),
         Column(
-            SwitchTo(Const('Приобрести подписку'), id='choose_sub_menu', state=profileSG.choose_sub_menu),
+            SwitchTo(Const('💰Приобрести подписку'), id='choose_sub_menu', state=profileSG.choose_sub_menu),
         ),
-        SwitchTo(Const('Назад'), id='back', state=profileSG.start),
+        SwitchTo(Const('🔙Назад'), id='back', state=profileSG.start),
         getter=getters.sub_menu_getter,
         state=profileSG.sub_menu
     ),
@@ -74,7 +73,7 @@ profile_dialog = Dialog(
             ),
             width=2
         ),
-        SwitchTo(Const('Назад'), id='back_sub_menu', state=profileSG.sub_menu),
+        SwitchTo(Const('🔙Назад'), id='back_sub_menu', state=profileSG.sub_menu),
         getter=getters.choose_sub_menu_getter,
         state=profileSG.choose_sub_menu
     ),
@@ -84,7 +83,7 @@ profile_dialog = Dialog(
         Column(
             Url(Const('Поделиться реферальной ссылкой'), id='ref_link', url=Format('{link}')),
         ),
-        SwitchTo(Const('Назад'), id='back', state=profileSG.start),
+        SwitchTo(Const('🔙Назад'), id='back', state=profileSG.start),
         getter=getters.ref_menu_getter,
         state=profileSG.ref_menu
     ),
@@ -94,21 +93,58 @@ profile_dialog = Dialog(
             id='get_voucher',
             on_success=getters.get_voucher
         ),
-        SwitchTo(Const('Назад'), id='back_ref_menu', state=profileSG.generations_menu),
+        SwitchTo(Const('🔙Назад'), id='back_ref_menu', state=profileSG.generations_menu),
         state=profileSG.get_voucher
     ),
     Window(
         DynamicMedia('media', when='media'),
-        Const('Это меню просмотра всех ваших результатов, тут вы можете ознакомиться со всеми своими '
-              'результатами примерки с добавления заднего фона и без'),
-        Row(
-            Button(Const('<'), id='previous_photo_page', on_click=getters.photo_pager, when='not_first'),
-            Button(Const('>'), id='next_photo_page', on_click=getters.photo_pager, when='not_last'),
-            when='model'
+        Format('<b>Это меню управления и просмотра ваших готовых фото для модели</b>\n\nВы можете добавить к фото задний фон, '
+               'для этого отправьте ссылку на изображение или само изображение в котором вы бы '
+               'хотели поменять задний фон.\n <b>Доступ по подписке</b> - {sub}'),
+        TextInput(
+            id='get_image',
+            on_success=getters.get_image_link
         ),
-        Button(Const('Удалить фото'), id='del_photo', on_click=getters.del_photo, when='media'),
-        SwitchTo(Const('Назад'), id='back', state=profileSG.start),
+        MessageInput(
+            content_types=ContentType.PHOTO,
+            func=getters.get_image
+        ),
+        Row(
+            Button(Const('◀️'), id='previous_photo_page', on_click=getters.photo_pager, when='not_first'),
+            Button(Const('▶️'), id='next_photo_page', on_click=getters.photo_pager, when='not_last'),
+            when='media'
+        ),
+        Button(Const('🌄Поменять у этого изображения задний фон'), id='get_bg_image_switcher', on_click=getters.get_bg_image_switcher, when='media'),
+        Button(Const('➕Добавить фото'), id='add_photo_switcher', on_click=getters.add_photo_switcher),
+        Button(Const('🗑Удалить фото'), id='del_photo', on_click=getters.del_photo, when='media'),
+        SwitchTo(Const('🔙Назад'), id='back', state=profileSG.start),
         getter=getters.photos_menu_getter,
         state=profileSG.photos_menu
+    ),
+    Window(
+        Const('Отправьте ссылку изображения или само изображение для замены фона'),
+        TextInput(
+            id='get_bg_image',
+            on_success=getters.get_bg_image_link
+        ),
+        MessageInput(
+            content_types=ContentType.PHOTO,
+            func=getters.get_bg_image
+        ),
+        SwitchTo(Const('🔙Назад'), id='back_photos_menu', state=profileSG.photos_menu),
+        state=profileSG.bg_photo_get
+    ),
+    Window(
+        Const('Отправьте фотографию модели или ссылку на нее'),
+        TextInput(
+            id='get_model',
+            on_success=getters.get_link
+        ),
+        MessageInput(
+            content_types=ContentType.PHOTO,
+            func=getters.get_photo
+        ),
+        SwitchTo(Const('🔙Назад'), id='back_model_photos_menu', state=profileSG.photos_menu),
+        state=profileSG.add_photo
     ),
 )
