@@ -16,11 +16,12 @@ class UsersTable(Base):
     username: Mapped[str] = mapped_column(VARCHAR)
     name: Mapped[str] = mapped_column(VARCHAR)
     user_id: Mapped[int] = mapped_column(BigInteger, unique=True)
-    generations: Mapped[int] = mapped_column(Integer, default=0)
+    generations: Mapped[int] = mapped_column(Integer, default=1)
     sub: Mapped[datetime] = mapped_column(DateTime, default=None, nullable=True)
     entry: Mapped[datetime] = mapped_column(DateTime, default=datetime.today())
     deeplink: Mapped[str] = mapped_column(VARCHAR)
     join: Mapped[str] = mapped_column(VARCHAR, nullable=True, default=None) # диплинк по которому юзер первый раз зашел в бота
+    referral: Mapped[str] = mapped_column(VARCHAR, nullable=True, default=None)
     refs: Mapped[int] = mapped_column(BigInteger, default=0)  # Кол-во зашедших рефералов
     active: Mapped[int] = mapped_column(Integer, default=1)
     activity: Mapped[DateTime] = mapped_column(DateTime, default=datetime.today())
@@ -31,7 +32,7 @@ class UserPhotosTable(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
-    user_id: Mapped[int] = mapped_column(BigInteger, unique=True)
+    user_id: Mapped[int] = mapped_column(BigInteger)
     photo: Mapped[int] = mapped_column(VARCHAR)
 
 

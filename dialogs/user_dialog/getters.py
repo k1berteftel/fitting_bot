@@ -9,278 +9,13 @@ from aiogram_dialog.widgets.kbd import Button, Select, ManagedMultiselect
 from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
 from pathlib import Path
 
-from utils.api_methods import concatenate_images, add_background
+from utils.api_methods import concatenate_images, add_watermark
 from database.action_data_class import DataInteraction
 from config_data.config import load_config, Config
 from states.state_groups import startSG
 
 
 config: Config = load_config()
-
-
-async def get_bg_image_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
-    session: DataInteraction = dialog_manager.middleware_data.get('session')
-    user = await session.get_user(event_from_user.id)
-    sub = '❌'
-    if user.sub:
-        terms = await session.get_sub_terms()
-        if terms.background:
-            sub = '✅'
-    return {'sub': sub}
-
-
-async def start_fitting(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
-    session: DataInteraction = dialog_manager.middleware_data.get('session')
-    user = await session.get_user(clb.from_user.id)
-    price = await session.get_gen_amount()
-    print(price)
-    if user.generations < price:
-        await clb.message.answer('К сожалению не хватает яблок для примерки')
-        return
-    model = dialog_manager.dialog_data.get('model')
-    if not model.startswith('http'):
-        model = Path(model)
-    cloth = dialog_manager.dialog_data.get('cloth')
-    if not cloth.startswith('http'):
-        cloth = Path(cloth)
-    category = dialog_manager.dialog_data.get('category')
-    await clb.message.answer('Начался процесс примерки, пожалуйста ожидайте')
-    try:
-        result = await concatenate_images(
-            cloth=cloth,
-            model=model,
-            category=category
-        )
-    except Exception as err:
-        print(err)
-        await clb.message.answer('К сожалению во время процесса примерки что-то пошло не так, пожалуйста попробуйте еще раз')
-        await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
-        return
-    if not result:
-        await clb.message.answer('К сожалению во время процесса примерки что-то пошло не так, пожалуйста попробуйте еще раз')
-        await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
-        return
-    await clb.message.answer('Ваши результаты примерки')
-    for photo in result:
-        await clb.message.answer_photo(photo=URLInputFile(url=photo))
-    if not str(model).startswith('http'):
-        try:
-            os.remove(model)
-        except Exception as err:
-            print(err)
-    if not str(cloth).startswith('http'):
-        try:
-            os.remove(cloth)
-        except Exception as err:
-            print(err)
-    await session.update_user_generations(clb.from_user.id, -price)
-    dialog_manager.dialog_data.clear()
-    await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
-
-
-async def get_bg_image(msg: Message, widget: MessageInput, dialog_manager: DialogManager):
-    session: DataInteraction = dialog_manager.middleware_data.get('session')
-    user = await session.get_user(msg.from_user.id)
-    price = await session.get_gen_amount()
-    if user.sub and user.generations < 2 * price:
-        await msg.answer('К сожалению у вас не достаточно яблок для примерки и добавлению заднего фона')
-        return
-    terms = await session.get_sub_terms()
-    if not user.sub and not terms.background:
-        await msg.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
-        return
-    if not user.sub and user.generations < 2 * price:
-        await msg.answer('К сожалению не хватает яблок для примерки')
-        return
-    bot: Bot = dialog_manager.middleware_data.get('bot')
-    file = await bot.get_file(msg.photo[-1].file_id)
-    await bot.download_file(file.file_path, f'bg_image_{msg.from_user.id}.jpg')
-    bg_image = f'bg_image_{msg.from_user.id}.jpg'
-    model = dialog_manager.dialog_data.get('model')
-    if not model.startswith('http'):
-        model = Path(model)
-    cloth = dialog_manager.dialog_data.get('cloth')
-    if not cloth.startswith('http'):
-        cloth = Path(cloth)
-    category = dialog_manager.dialog_data.get('category')
-    await msg.answer('Начался процесс примерки, пожалуйста ожидайте')
-    try:
-        result = await concatenate_images(
-            cloth=cloth,
-            model=model,
-            category=category
-        )
-    except Exception as err:
-        print(err)
-        await msg.answer('К сожалению во время процесса примерки что-то пошло не так, пожалуйста попробуйте еще раз')
-        await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
-        return
-    if not result:
-        await msg.answer('К сожалению во время процесса примерки что-то пошло не так, пожалуйста попробуйте еще раз')
-        await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
-        return
-    async with ClientSession() as client:
-        async with client.get(result[0]) as resp:
-            image = resp.content
-            with open(f'result_{msg.from_user.id}.png', 'wb') as file:
-                file.write(await image.read())
-            image = f'result_{msg.from_user.id}.png'
-    try:
-        result = await add_background(
-            image=image,
-            bg_image=bg_image,
-            user_id=msg.from_user.id
-        )
-    except Exception as err:
-        print(err)
-        await msg.answer('Во время замены фона что-то пошло не так, '
-                         'пожалуйста попробуйте еще раз или обратитесь в поддержку')
-        await msg.answer_photo(FSInputFile(path=image))
-        dialog_manager.dialog_data.clear()
-        if not str(model).startswith('http'):
-            try:
-                os.remove(model)
-            except Exception as err:
-                print(err)
-        if not str(cloth).startswith('http'):
-            try:
-                os.remove(cloth)
-            except Exception as err:
-                print(err)
-        try:
-            os.remove(image)
-            os.remove(bg_image)
-        except Exception as err:
-            print(err)
-        await dialog_manager.switch_to(startSG.get_bg_image)
-        return
-    await msg.answer('Ваши результаты примерки')
-    message = await msg.answer_photo(photo=FSInputFile(path=result))
-    if not str(model).startswith('http'):
-        try:
-            os.remove(model)
-        except Exception as err:
-            print(err)
-    if not str(cloth).startswith('http'):
-        try:
-            os.remove(cloth)
-        except Exception as err:
-            print(err)
-    await session.update_user_generations(msg.from_user.id, -price)
-    dialog_manager.dialog_data.clear()
-    await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
-
-
-async def get_bg_image_link(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
-    if not text.startswith('http'):
-        await msg.answer('Вы ввели не ссылку на фото, пожалуйста попробуйте снова')
-        return
-    session: DataInteraction = dialog_manager.middleware_data.get('session')
-    user = await session.get_user(msg.from_user.id)
-    price = await session.get_gen_amount()
-    if user.sub and user.generations < 2 * price:
-        await msg.answer('К сожалению у вас не достаточно яблок для примерки и добавлению заднего фона')
-        return
-    terms = await session.get_sub_terms()
-    if not user.sub and not terms.background:
-        await msg.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
-        return
-    if not user.sub and user.generations < 2 * price:
-        await msg.answer('К сожалению не хватает яблок для примерки')
-        return
-
-    model = dialog_manager.dialog_data.get('model')
-    if not model.startswith('http'):
-        model = Path(model)
-    cloth = dialog_manager.dialog_data.get('cloth')
-    if not cloth.startswith('http'):
-        cloth = Path(cloth)
-    category = dialog_manager.dialog_data.get('category')
-    await msg.answer('Начался процесс примерки, пожалуйста ожидайте')
-    try:
-        result = await concatenate_images(
-            cloth=cloth,
-            model=model,
-            category=category
-        )
-    except Exception as err:
-        print(err)
-        await msg.answer('К сожалению во время процесса примерки что-то пошло не так, пожалуйста попробуйте еще раз')
-        await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
-        return
-    if not result:
-        await msg.answer('К сожалению во время процесса примерки что-то пошло не так, пожалуйста попробуйте еще раз')
-        await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
-        return
-    async with ClientSession() as client:
-        try:
-            async with client.get(text) as resp:
-                img_data = resp.content
-                with open(f'bg_image_{msg.from_user.id}.png', 'wb') as file:
-                    file.write(await img_data.read())
-        except Exception as err:
-            print(err)
-            await msg.answer('Извините, но фото для замены фона не подлежит скачиванию, '
-                             'попробуйте выбрать или загрузить другую фотографию')
-            await dialog_manager.switch_to(startSG.get_bg_image)
-            return
-        bg_image = f'bg_image_{msg.from_user.id}.png'
-        async with client.get(result[0]) as resp:
-            image = resp.content
-            with open(f'result_{msg.from_user.id}.png', 'wb') as file:
-                file.write(await image.read())
-            image = f'result_{msg.from_user.id}.png'
-    try:
-        result = await add_background(
-            image=image,
-            bg_image=bg_image,
-            user_id=msg.from_user.id
-        )
-    except Exception as err:
-        print(err)
-        await msg.answer('Во время замены фона что-то пошло не так, '
-                         'пожалуйста попробуйте еще раз или обратитесь в поддержку')
-        await msg.answer_photo(FSInputFile(path=image))
-        dialog_manager.dialog_data.clear()
-        if not str(model).startswith('http'):
-            try:
-                os.remove(model)
-            except Exception as err:
-                print(err)
-        if not str(cloth).startswith('http'):
-            try:
-                os.remove(cloth)
-            except Exception as err:
-                print(err)
-        try:
-            os.remove(image)
-            os.remove(bg_image)
-        except Exception as err:
-            print(err)
-        await dialog_manager.switch_to(startSG.get_bg_image)
-        return
-    await msg.answer('Ваши результаты примерки и замены фона')
-    print(result)
-    message = await msg.answer_photo(photo=FSInputFile(path=result))
-    if not str(model).startswith('http'):
-        try:
-            os.remove(model)
-        except Exception as err:
-            print(err)
-    if not str(cloth).startswith('http'):
-        try:
-            os.remove(cloth)
-        except Exception as err:
-            print(err)
-    try:
-        os.remove(image)
-        os.remove(bg_image)
-        os.remove(result)
-    except Exception as err:
-        print(err)
-    await session.update_user_generations(msg.from_user.id, -price)
-    dialog_manager.dialog_data.clear()
-    await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
 
 
 async def get_cloth_link(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
@@ -435,12 +170,80 @@ async def model_getter(dialog_manager: DialogManager, event_from_user: User, **k
 
 async def choose_category(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
     if clb.data.startswith('high'):
-        dialog_manager.dialog_data['category'] = 'tops'
+        category = 'tops'
     elif clb.data.startswith('low'):
-        dialog_manager.dialog_data['category'] = 'bottoms'
+        category = 'bottoms'
     else:
-        dialog_manager.dialog_data['category'] = 'one-pieces'
-    await dialog_manager.switch_to(startSG.get_bg_image)
+        category = 'one-pieces'
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    user = await session.get_user(clb.from_user.id)
+    terms = await session.get_sub_terms()
+    price = await session.get_gen_amount()
+    print(price)
+    if user.generations < price:
+        await clb.message.answer('К сожалению не хватает яблок для примерки')
+        return
+    model = dialog_manager.dialog_data.get('model')
+    if not model.startswith('http'):
+        model = Path(model)
+    cloth = dialog_manager.dialog_data.get('cloth')
+    if not cloth.startswith('http'):
+        cloth = Path(cloth)
+    await clb.message.answer('Начался процесс замены, пожалуйста ожидайте')
+    try:
+        result = await concatenate_images(
+            cloth=cloth,
+            model=model,
+            category=category
+        )
+    except Exception as err:
+        print(err)
+        await clb.message.answer(
+            'К сожалению во время процесса замены что-то пошло не так, пожалуйста попробуйте еще раз')
+        await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
+        return
+    if not result:
+        await clb.message.answer(
+            'К сожалению во время процесса замены что-то пошло не так, пожалуйста попробуйте еще раз')
+        await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
+        return
+    if not user.sub and terms.watermark:
+        await clb.message.answer('Ваши результаты замены')
+        for photo in result:
+            try:
+                async with ClientSession(trust_env=True) as client:
+                    async with client.get(photo) as resp:
+                        image = resp.content
+                        with open(f'image_{clb.from_user.id}.png', 'wb') as file:
+                            file.write(await image.read())
+                        saved_image = f'image_{clb.from_user.id}.png'
+            except Exception as err:
+                print(err)
+                continue
+            image = await add_watermark(saved_image, clb.from_user.id)
+            await clb.message.answer_photo(photo=FSInputFile(path=image))
+            try:
+                os.remove(saved_image)
+                os.remove(image)
+            except Exception as err:
+                print(err)
+    else:
+        await clb.message.answer('Ваши результаты замены')
+        for photo in result:
+            await clb.message.answer_photo(photo=URLInputFile(url=photo))
+    if not str(model).startswith('http'):
+        try:
+            os.remove(model)
+        except Exception as err:
+            print(err)
+    if not str(cloth).startswith('http'):
+        try:
+            os.remove(cloth)
+        except Exception as err:
+            print(err)
+    await session.update_user_generations(clb.from_user.id, -price)
+    dialog_manager.dialog_data.clear()
+    await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
 
 
 async def settings_switcher(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):

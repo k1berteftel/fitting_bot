@@ -1,4 +1,5 @@
 import asyncio
+from PIL import Image
 from aiohttp import ClientSession
 import base64
 from pathlib import Path
@@ -86,3 +87,43 @@ async def add_background(image: str, bg_image: str, user_id: int) -> str:
 
 
 #asyncio.run(concatenate_images(Path('cloth_1236300146.jpg'), Path('model_1236300146.jpg'), 'tops'))
+
+
+async def add_watermark(image: str, user_id: int) -> str:
+    # Открываем основное изображение
+    image = Image.open(image).convert("RGBA")
+    image_width, image_height = image.size
+
+    # Открываем изображение водяного знака
+    watermark = Image.open('watermark.jpg').convert("RGBA")
+    watermark_width, watermark_height = watermark.size
+
+    # Масштабируем водяной знак (по ширине основного изображения)
+    new_width = int(image_width * 0.2)
+    new_height = int(new_width * watermark_height / watermark_width)
+    watermark = watermark.resize((new_width, new_height))
+
+    # Применяем прозрачность
+    watermark = watermark.copy()
+    alpha = watermark.split()[3]  # Канал альфа
+    alpha = alpha.point(lambda p: p * (200 / 255.0))
+    watermark.putalpha(alpha)
+
+    # Позиция водяного знака (правый нижний угол)
+    x = image_width - new_width - 10  # Отступ 10px
+    y = image_height - new_height - 10
+
+    # Создаём новый слой для объединения
+    transparent_layer = Image.new("RGBA", image.size, (255, 255, 255, 0))
+    transparent_layer.paste(watermark, (x, y), watermark)
+
+    # Объединяем изображения
+    watermarked_image = Image.alpha_composite(image, transparent_layer)
+
+    # Сохраняем результат
+    watermarked_image.convert("RGB").save(f'{user_id}.png', "JPEG")
+
+    return f'{user_id}.png'
+
+
+asyncio.run(add_watermark('model_1236300146.jpg', 1236300146))

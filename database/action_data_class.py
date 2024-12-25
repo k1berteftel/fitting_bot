@@ -158,6 +158,11 @@ class DataInteraction():
             result = await session.scalar(select(VouchersTable.amount).where(VouchersTable.code == code))
         return result
 
+    async def get_user_by_deeplink(self, deeplink):
+        async with self._sessions() as session:
+            result = await session.scalar(select(UsersTable).where(UsersTable.deeplink == deeplink))
+        return result
+
     async def get_users_by_join_link(self, deeplink: str):
         async with self._sessions() as session:
             result = await session.scalars(select(UsersTable).where(UsersTable.join == deeplink))
@@ -269,22 +274,22 @@ class DataInteraction():
             ))
             await session.commit()
 
-    async def update_user_sub(self, user_id: int, months: int|None):
-        if months is None:
+    async def update_user_sub(self, user_id: int, days: int|None):
+        if days is None:
             async with self._sessions() as session:
                 await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
-                    sub=months
+                    sub=days
                 ))
         if (await self.get_user(user_id)).sub:
             async with self._sessions() as session:
                 await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
-                    sub=UsersTable.sub + relativedelta(months=months)
+                    sub=UsersTable.sub + relativedelta(days=days)
                 ))
                 await session.commit()
         else:
             async with self._sessions() as session:
                 await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
-                    sub=datetime.today() + relativedelta(months=months)
+                    sub=datetime.today() + relativedelta(days=days)
                 ))
                 await session.commit()
 

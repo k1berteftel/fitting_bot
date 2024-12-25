@@ -1,3 +1,4 @@
+import datetime
 import uuid
 import os
 from aiohttp import ClientSession
@@ -11,7 +12,7 @@ from yookassa import Configuration, Payment
 from yookassa.payment import PaymentResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-from utils.api_methods import add_background
+from utils.api_methods import add_background, add_watermark
 from utils.schdulers import check_sub
 from database.action_data_class import DataInteraction
 from states.state_groups import profileSG
@@ -28,6 +29,8 @@ async def get_bg_image(msg: Message, widget: MessageInput, dialog_manager: Dialo
     await bot.download_file(file.file_path, f'bg_image_{msg.from_user.id}.png')
     bg_image = f'bg_image_{msg.from_user.id}.png'
     image = dialog_manager.dialog_data.get('image')
+    user = await session.get_user(msg.from_user.id)
+    terms = await session.get_sub_terms()
     if not image.startswith('http'):
         bot: Bot = dialog_manager.middleware_data.get('bot')
         file = await bot.get_file(image)
@@ -59,9 +62,18 @@ async def get_bg_image(msg: Message, widget: MessageInput, dialog_manager: Dialo
         dialog_manager.dialog_data.clear()
         await dialog_manager.switch_to(profileSG.photos_menu)
         return
-    await msg.answer('Ваши результаты замены фона')
-    await msg.answer_photo(photo=FSInputFile(path=result))
+    if not user.sub and terms.watermark:
+        image = await add_watermark(result, msg.from_user.id)
+        await msg.answer_photo(photo=FSInputFile(path=image))
+        try:
+            os.remove(image)
+        except Exception as err:
+            print(err)
+    else:
+        await msg.answer('Ваши результаты замены фона')
+        await msg.answer_photo(photo=FSInputFile(path=result))
     try:
+        os.remove(result)
         os.remove(bg_image)
         os.remove(image)
     except Exception as err:
@@ -77,6 +89,8 @@ async def get_bg_image_link(msg: Message, widget: ManagedTextInput, dialog_manag
         await msg.answer('Вы ввели не ссылку на фото, пожалуйста попробуйте снова')
         return
     session: DataInteraction = dialog_manager.middleware_data.get('session')
+    user = await session.get_user(msg.from_user.id)
+    terms = await session.get_sub_terms()
     await msg.answer('Начался процесс замены фона, пожалуйста ожидайте')
     try:
         async with ClientSession() as client:
@@ -123,9 +137,18 @@ async def get_bg_image_link(msg: Message, widget: ManagedTextInput, dialog_manag
         dialog_manager.dialog_data.clear()
         await dialog_manager.switch_to(profileSG.photos_menu)
         return
-    await msg.answer('Ваши результаты замены фона')
-    await msg.answer_photo(photo=FSInputFile(path=result))
+    if not user.sub and terms.watermark:
+        image = await add_watermark(result, msg.from_user.id)
+        await msg.answer_photo(photo=FSInputFile(path=image))
+        try:
+            os.remove(image)
+        except Exception as err:
+            print(err)
+    else:
+        await msg.answer('Ваши результаты замены фона')
+        await msg.answer_photo(photo=FSInputFile(path=result))
     try:
+        os.remove(result)
         os.remove(bg_image)
         os.remove(image)
     except Exception as err:
@@ -353,6 +376,7 @@ async def check_payment(clb: CallbackQuery, widget: Button, dialog_manager: Dial
     payment_id: PaymentResponse = dialog_manager.dialog_data.get('payment_id')
     payment: PaymentResponse = await Payment.find_one(payment_id)
     if payment.paid:
+        user = await session.get_user(clb.from_user.id)
         await clb.answer('Подтверждение оплаты')
         amount = dialog_manager.dialog_data.get('amount')
         scheduler: AsyncIOScheduler = dialog_manager.middleware_data.get('scheduler')
@@ -360,9 +384,17 @@ async def check_payment(clb: CallbackQuery, widget: Button, dialog_manager: Dial
         if dialog_manager.dialog_data.get('type') == 'gen':
             await clb.answer(f'Оплата была успешно произведена, к вам на баланс было зачислено {amount} яблок')
             await session.update_user_generations(clb.from_user.id, amount)
+            if user.referral:
+                referral = await session.get_user_by_deeplink(user.referral)
+                gens = int(round(amount * 0.3))
+                await session.update_user_generations(referral.user_id, gens)
+                await bot.send_message(
+                    chat_id=referral.user_id,
+                    text=f'Вы получили {gens} дополнительных яблок за счет покупки вашего реферала'
+                )
             await dialog_manager.switch_to(profileSG.generations_menu)
         else:
-            await session.update_user_sub(clb.from_user.id, amount)
+            await session.update_user_sub(clb.from_user.id, amount * 30)
             if not scheduler.get_job(str(clb.from_user.id)):
                 scheduler.add_job(
                     check_sub,
@@ -370,6 +402,14 @@ async def check_payment(clb: CallbackQuery, widget: Button, dialog_manager: Dial
                     args=[bot, clb.from_user.id, session, scheduler],
                     hours=24,
                     id=str(clb.from_user.id)
+                )
+            if user.referral:
+                days = int(round(amount * 30 * 0.3))
+                referral = await session.get_user_by_deeplink(user.referral)
+                await session.update_user_sub(referral.user_id, days=days)
+                await bot.send_message(
+                    chat_id=referral.user_id,
+                    text=f'Вы получили {days} дополнительных дней подписки за счет покупки вашего реферала'
                 )
             await dialog_manager.switch_to(profileSG.sub_menu)
     else:

@@ -71,23 +71,6 @@ user_dialog = Dialog(
         state=startSG.choose_category
     ),
     Window(
-        Format('Отправьте фото или изображение для замены фона.\n<b>Доступ по подписке</b> - {sub}'),
-        TextInput(
-            id='get_bg_image',
-            on_success=getters.get_bg_image_link
-        ),
-        MessageInput(
-            content_types=ContentType.PHOTO,
-            func=getters.get_bg_image
-        ),
-        Column(
-            Button(Const('⏭️Продолжить без заднего фона'), id='start_fitting', on_click=getters.start_fitting)
-        ),
-        SwitchTo(Const('🔙Назад'), id='back_choose_category', state=startSG.choose_category),
-        getter=getters.get_bg_image_getter,
-        state=startSG.get_bg_image
-    ),
-    Window(
         Const('Тут вы можете настроить точечные моменты примерки'),
         Column(
             Button(Format('{param_1}|Разрешить длинной одежде прикрывать(менять) ноги/обувь'), id='1_param', on_click=getters.on_param),
