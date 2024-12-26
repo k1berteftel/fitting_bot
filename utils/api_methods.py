@@ -126,4 +126,4 @@ async def add_watermark(image: str, user_id: int) -> str:
     return f'{user_id}.png'
 
 
-asyncio.run(add_watermark('model_1236300146.jpg', 1236300146))
+#asyncio.run(add_watermark('model_1236300146.jpg', 1236300146))

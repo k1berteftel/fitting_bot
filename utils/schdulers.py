@@ -57,6 +57,7 @@ async def send_messages(bot: Bot, session: DataInteraction, keyboard: InlineKeyb
 async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: AsyncIOScheduler, session: DataInteraction, dialog_manager: DialogManager):
     payment: PaymentResponse = await Payment.find_one(payment_id)
     if payment.paid:
+        scheduler.remove_job(job_id=f'payment_{user_id}')
         user = await session.get_user(user_id)
         await bot.send_message(chat_id=user_id, text='Подтверждение оплаты')
         amount = dialog_manager.dialog_data.get('amount')
@@ -72,7 +73,9 @@ async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: Asyn
                     chat_id=referral.user_id,
                     text=f'Вы получили {gens} дополнительных генераций за счет покупки вашего реферала'
                 )
+            scheduler.remove_job(job_id=f'payment_{user_id}')
             await dialog_manager.switch_to(profileSG.generations_menu)
+            return
         else:
             await session.update_user_sub(user_id, amount * 30)
             if not scheduler.get_job(job_id=str(user_id)):
@@ -91,5 +94,6 @@ async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: Asyn
                     chat_id=referral.user_id,
                     text=f'Вы получили {days} дополнительных дней подписки за счет покупки вашего реферала'
                 )
+            scheduler.remove_job(job_id=f'payment_{user_id}')
             await dialog_manager.switch_to(profileSG.sub_menu)
-        scheduler.remove_job(job_id=f'payment_{user_id}')
+            return

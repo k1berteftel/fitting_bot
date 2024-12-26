@@ -117,7 +117,7 @@ class SubTermsTable(Base):
 
 
 class TextsTable(Base):
-    __tablename__ = 'subterms'
+    __tablename__ = 'texts'
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     sub_text: Mapped[str] = mapped_column(String)
