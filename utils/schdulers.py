@@ -1,10 +1,15 @@
 import asyncio
 from aiogram import Bot
+from yookassa import Configuration, Payment
+from yookassa.payment import PaymentResponse
+from aiogram import Bot
+from aiogram_dialog import DialogManager
 from aiogram.types import InlineKeyboardMarkup
 from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database.action_data_class import DataInteraction
 from dateutil.relativedelta import relativedelta
+from states.state_groups import profileSG
 
 
 async def check_sub(bot: Bot, user_id: int, session: DataInteraction, scheduler: AsyncIOScheduler):
@@ -47,3 +52,44 @@ async def send_messages(bot: Bot, session: DataInteraction, keyboard: InlineKeyb
         except Exception as err:
             print(err)
             await session.set_active(user.user_id, 0)
+
+
+async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: AsyncIOScheduler, session: DataInteraction, dialog_manager: DialogManager):
+    payment: PaymentResponse = await Payment.find_one(payment_id)
+    if payment.paid:
+        user = await session.get_user(user_id)
+        await bot.send_message(chat_id=user_id, text='Подтверждение оплаты')
+        amount = dialog_manager.dialog_data.get('amount')
+        if dialog_manager.dialog_data.get('type') == 'gen':
+            await bot.send_message(chat_id=user_id, text=f'Оплата была успешно произведена, к вам на баланс было зачислено {amount} генераций')
+            await session.update_user_generations(user_id, amount)
+            if user.referral:
+                referral = await session.get_user_by_deeplink(user.referral)
+                gens = int(round(amount * 0.3))
+                await session.add_prizes(user.referral, gens)
+                await session.update_user_generations(referral.user_id, gens)
+                await bot.send_message(
+                    chat_id=referral.user_id,
+                    text=f'Вы получили {gens} дополнительных генераций за счет покупки вашего реферала'
+                )
+            await dialog_manager.switch_to(profileSG.generations_menu)
+        else:
+            await session.update_user_sub(user_id, amount * 30)
+            if not scheduler.get_job(job_id=str(user_id)):
+                scheduler.add_job(
+                    check_sub,
+                    'interval',
+                    args=[bot, user_id, session, scheduler],
+                    hours=24,
+                    id=str(user_id)
+                )
+            if user.referral:
+                days = int(round(amount * 30 * 0.3))
+                referral = await session.get_user_by_deeplink(user.referral)
+                await session.update_user_sub(referral.user_id, days=days)
+                await bot.send_message(
+                    chat_id=referral.user_id,
+                    text=f'Вы получили {days} дополнительных дней подписки за счет покупки вашего реферала'
+                )
+            await dialog_manager.switch_to(profileSG.sub_menu)
+        scheduler.remove_job(job_id=f'payment_{user_id}')

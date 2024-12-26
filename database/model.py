@@ -23,6 +23,7 @@ class UsersTable(Base):
     join: Mapped[str] = mapped_column(VARCHAR, nullable=True, default=None) # диплинк по которому юзер первый раз зашел в бота
     referral: Mapped[str] = mapped_column(VARCHAR, nullable=True, default=None)
     refs: Mapped[int] = mapped_column(BigInteger, default=0)  # Кол-во зашедших рефералов
+    prizes: Mapped[int] = mapped_column(Integer, default=0)
     active: Mapped[int] = mapped_column(Integer, default=1)
     activity: Mapped[DateTime] = mapped_column(DateTime, default=datetime.today())
 
@@ -113,3 +114,11 @@ class SubTermsTable(Base):
     watermark: Mapped[bool] = mapped_column(Boolean)
     background: Mapped[bool] = mapped_column(Boolean)
     photos: Mapped[int] = mapped_column(Integer, default=3)
+
+
+class TextsTable(Base):
+    __tablename__ = 'subterms'
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    sub_text: Mapped[str] = mapped_column(String)
+    ref_text: Mapped[str] = mapped_column(String)

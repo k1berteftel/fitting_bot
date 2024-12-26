@@ -181,7 +181,7 @@ async def choose_category(clb: CallbackQuery, widget: Button, dialog_manager: Di
     price = await session.get_gen_amount()
     print(price)
     if user.generations < price:
-        await clb.message.answer('К сожалению не хватает яблок для примерки')
+        await clb.message.answer('К сожалению не хватает доступных генераций для примерки')
         return
     model = dialog_manager.dialog_data.get('model')
     if not model.startswith('http'):

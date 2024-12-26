@@ -13,7 +13,7 @@ from yookassa.payment import PaymentResponse
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from utils.api_methods import add_background, add_watermark
-from utils.schdulers import check_sub
+from utils.schdulers import check_sub, check_payment
 from database.action_data_class import DataInteraction
 from states.state_groups import profileSG
 
@@ -164,14 +164,14 @@ async def get_image(msg: Message, widget: MessageInput, dialog_manager: DialogMa
     user = await session.get_user(msg.from_user.id)
     price = await session.get_gen_amount()
     if user.sub and user.generations < price:
-        await msg.answer('К сожалению у вас не достаточно яблок для добавления заднего фона')
+        await msg.answer('К сожалению у вас не достаточно генераций для добавления заднего фона')
         return
     terms = await session.get_sub_terms()
     if not user.sub and not terms.background:
         await msg.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
         return
     if not user.sub and user.generations < price:
-        await msg.answer('К сожалению не хватает яблок для примерки')
+        await msg.answer('К сожалению не хватает генераций для примерки')
         return
     dialog_manager.dialog_data['image'] = msg.photo[-1].file_id
     await dialog_manager.switch_to(profileSG.bg_photo_get)
@@ -185,14 +185,14 @@ async def get_image_link(msg: Message, widget: ManagedTextInput, dialog_manager:
     user = await session.get_user(msg.from_user.id)
     price = await session.get_gen_amount()
     if user.sub and user.generations < price:
-        await msg.answer('К сожалению у вас не достаточно яблок для добавления заднего фона')
+        await msg.answer('К сожалению у вас не достаточно генераций для добавления заднего фона')
         return
     terms = await session.get_sub_terms()
     if not user.sub and not terms.background:
         await msg.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
         return
     if not user.sub and user.generations < price:
-        await msg.answer('К сожалению не хватает яблок для примерки')
+        await msg.answer('К сожалению не хватает генераций для примерки')
         return
     dialog_manager.dialog_data['image'] = text
     await dialog_manager.switch_to(profileSG.bg_photo_get)
@@ -210,7 +210,7 @@ async def get_bg_image_switcher(clb: CallbackQuery, widget: Button, dialog_manag
         await clb.message.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
         return
     if not user.sub and user.generations < price:
-        await clb.message.answer('К сожалению не хватает яблок для примерки')
+        await clb.message.answer('К сожалению не хватает генераций для примерки')
         return
     photo_id = dialog_manager.dialog_data.get('id')
     photo = await session.get_user_photo(photo_id)
@@ -246,7 +246,7 @@ async def add_photo_switcher(clb: CallbackQuery, widget: Button, dialog_manager:
             return
     else:
         if len(photos) >= 2:
-            await clb.answer('Вы можете иметь единовременно не более 2 фото моделей')
+            await clb.answer('Больше фото при подписке на бота')
             return
     await dialog_manager.switch_to(profileSG.add_photo)
 
@@ -350,8 +350,11 @@ async def start_getter(event_from_user: User, dialog_manager: DialogManager, **k
     }
 
 
-async def payment_menu_getter(dialog_manager: DialogManager, **kwargs):
+async def payment_menu_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
     price = dialog_manager.dialog_data.get('price')
+    scheduler: AsyncIOScheduler = dialog_manager.middleware_data.get('scheduler')
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    bot: Bot = dialog_manager.middleware_data.get('bot')
     payment = await Payment.create({
         "amount": {
             "value": str(float(price)),
@@ -359,78 +362,43 @@ async def payment_menu_getter(dialog_manager: DialogManager, **kwargs):
         },
         "confirmation": {
             "type": "redirect",
-            "return_url": "https://t.me/Origandtocha_bot"
+            "return_url": "https://t.me/AidaLook_bot"
         },
         "capture": True,
-        "description": "Приобретение 'яблок'" if dialog_manager.dialog_data.get('type') == 'gen' else "Приобретение подписки"
+        "description": "Приобретение генераций" if dialog_manager.dialog_data.get('type') == 'gen' else "Приобретение подписки"
     }, uuid.uuid4())
     url = payment.confirmation.confirmation_url
-    dialog_manager.dialog_data['payment_id'] = payment.id
+    scheduler.add_job(
+        check_payment,
+        'interval',
+        args=[payment.id, event_from_user.id, bot, scheduler, session, dialog_manager],
+        id=f'payment_{event_from_user.id}',
+        seconds=5
+    )
     return {
         'url': url
     }
 
 
-async def check_payment(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
-    session: DataInteraction = dialog_manager.middleware_data.get('session')
-    payment_id: PaymentResponse = dialog_manager.dialog_data.get('payment_id')
-    payment: PaymentResponse = await Payment.find_one(payment_id)
-    if payment.paid:
-        user = await session.get_user(clb.from_user.id)
-        await clb.answer('Подтверждение оплаты')
-        amount = dialog_manager.dialog_data.get('amount')
-        scheduler: AsyncIOScheduler = dialog_manager.middleware_data.get('scheduler')
-        bot: Bot = dialog_manager.middleware_data.get('bot')
-        if dialog_manager.dialog_data.get('type') == 'gen':
-            await clb.answer(f'Оплата была успешно произведена, к вам на баланс было зачислено {amount} яблок')
-            await session.update_user_generations(clb.from_user.id, amount)
-            if user.referral:
-                referral = await session.get_user_by_deeplink(user.referral)
-                gens = int(round(amount * 0.3))
-                await session.update_user_generations(referral.user_id, gens)
-                await bot.send_message(
-                    chat_id=referral.user_id,
-                    text=f'Вы получили {gens} дополнительных яблок за счет покупки вашего реферала'
-                )
-            await dialog_manager.switch_to(profileSG.generations_menu)
-        else:
-            await session.update_user_sub(clb.from_user.id, amount * 30)
-            if not scheduler.get_job(str(clb.from_user.id)):
-                scheduler.add_job(
-                    check_sub,
-                    'interval',
-                    args=[bot, clb.from_user.id, session, scheduler],
-                    hours=24,
-                    id=str(clb.from_user.id)
-                )
-            if user.referral:
-                days = int(round(amount * 30 * 0.3))
-                referral = await session.get_user_by_deeplink(user.referral)
-                await session.update_user_sub(referral.user_id, days=days)
-                await bot.send_message(
-                    chat_id=referral.user_id,
-                    text=f'Вы получили {days} дополнительных дней подписки за счет покупки вашего реферала'
-                )
-            await dialog_manager.switch_to(profileSG.sub_menu)
-    else:
-        await clb.answer('Оплата еще не была произведена, пожалуйста попробуйте снова')
-
-
 async def sub_menu_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     user = await session.get_user(event_from_user.id)
+    texts = await session.get_texts()
     return {
-        'sub': f' до {user.sub}' if user.sub else 'Отсутствует'
+        'sub': f' до {user.sub}' if user.sub else 'Отсутствует',
+        'text': texts.sub_text
     }
 
 
 async def ref_menu_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     user = await session.get_user(event_from_user.id)
+    texts = await session.get_texts()
     return {
         'refs': user.refs,
-        'prizes': user.generations,
-        'link': f'http://t.me/share/url?url=t.me/AidaLook_bot?start={user.deeplink}'
+        'prizes': user.prizes,
+        'link': f'http://t.me/share/url?url=t.me/AidaLook_bot?start={user.deeplink}',
+        'text': texts.ref_text
     }
 
 

@@ -15,6 +15,32 @@ from config_data.config import load_config, Config
 from states.state_groups import adminSG
 
 
+async def get_text(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    type = dialog_manager.dialog_data.get('text')
+    if type == 'sub':
+        await session.set_text(sub_text=text)
+    else:
+        await session.set_text(ref_text=text)
+    await msg.answer('Текст был успешно обновлен')
+    dialog_manager.dialog_data.clear()
+    await dialog_manager.switch_to(adminSG.texts_menu)
+
+
+async def get_text_switcher(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
+    dialog_manager.dialog_data['text'] = clb.data.split('_')[0]
+    await dialog_manager.switch_to(adminSG.get_text)
+
+
+async def texts_menu_getter(dialog_manager: DialogManager, **kwargs):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    texts = await session.get_texts()
+    return {
+        'sub_text': texts.sub_text,
+        'ref_text': texts.ref_text
+    }
+
+
 async def get_photo_count(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
     try:
         photos = int(text)

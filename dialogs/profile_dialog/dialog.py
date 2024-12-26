@@ -12,10 +12,10 @@ from states.state_groups import profileSG
 
 profile_dialog = Dialog(
     Window(
-        Format('<b>👤 Профиль</b>\n\n<b>Юзернейм:</b> {username}\n<b>🍎 Баланс яблок:</b> {generations}\n'
+        Format('<b>👤 Профиль</b>\n\n<b>Юзернейм:</b> {username}\n<b>💰 Генерации:</b> {generations}\n'
                    '<b>✨ Подписка:</b> {sub}'),
         Column(
-            SwitchTo(Const('💰Приобрести яблоки'), id='generations_menu_switcher', state=profileSG.generations_menu),
+            SwitchTo(Const('💰Приобрести генерации'), id='generations_menu_switcher', state=profileSG.generations_menu),
             SwitchTo(Const('✨Управление подпиской'), id='sub_menu_switcher', state=profileSG.sub_menu),
             SwitchTo(Const('🏦Реферальная программа'), id='ref_menu_switcher', state=profileSG.ref_menu),
             SwitchTo(Const('🖼Управление фотографиями'), id='photos_menu_switcher', state=profileSG.photos_menu),
@@ -43,17 +43,16 @@ profile_dialog = Dialog(
     ),
     Window(
         Const('Пожалуйста произведите оплату по данной ссылке и потом ❗️<b>обязательно</b>❗️ '
-              'нажмите на кнопку проверки оплаты'),
+              'после произведения оплаты не выходите из данного меню до ее подтверждения'),
         Column(
             Url(Const('🔗Оплатить'), id='payment_link', url=Format('{url}')),
-            Button(Const('Проверить оплату'), id='check_payment', on_click=getters.check_payment),
         ),
         SwitchTo(Const('🔙Назад'), id='back_generations_menu', state=profileSG.generations_menu),
         getter=getters.payment_menu_getter,
         state=profileSG.payment
     ),
     Window(
-        Format('<b>Подписка:</b> {sub}\n\nУсловия привилегии подписки'),
+        Format('<b>Подписка:</b> {sub}\n\n{text}'),
         Column(
             SwitchTo(Const('💰Приобрести подписку'), id='choose_sub_menu', state=profileSG.choose_sub_menu),
         ),
@@ -78,8 +77,8 @@ profile_dialog = Dialog(
         state=profileSG.choose_sub_menu
     ),
     Window(
-        Format('<b>Ваши рефералы:</b> {refs}\n<b>Вознаграждения:</b> {prizes}\n\n'
-               '<b>Ваша реферальная ссылка:</b> {link}'),
+        Format('<b>Ваши рефералы:</b> {refs}\n<b>Вознаграждения(за все время):</b> {prizes}\n\n'
+               '<b>Ваша реферальная ссылка:</b> {link}\n{text}'),
         Column(
             Url(Const('Поделиться реферальной ссылкой'), id='ref_link', url=Format('{link}')),
         ),
@@ -98,8 +97,7 @@ profile_dialog = Dialog(
     ),
     Window(
         DynamicMedia('media', when='media'),
-        Format('Меню работы с фото модели и фона.'
-               '.\n <b>Доступ по подписке</b> - {sub}'),
+        Format('Работа с фото модели и фоном. Фон меняется при подписке на бота'),
         TextInput(
             id='get_image',
             on_success=getters.get_image_link
@@ -113,7 +111,7 @@ profile_dialog = Dialog(
             Button(Const('▶️'), id='next_photo_page', on_click=getters.photo_pager, when='not_last'),
             when='media'
         ),
-        Button(Const('🌄Поменять у этого изображения задний фон'), id='get_bg_image_switcher', on_click=getters.get_bg_image_switcher, when='media'),
+        Button(Const('🌄Поменять у этого изображения фон'), id='get_bg_image_switcher', on_click=getters.get_bg_image_switcher, when='media'),
         Button(Const('➕Добавить фото'), id='add_photo_switcher', on_click=getters.add_photo_switcher),
         Button(Const('🗑Удалить фото'), id='del_photo', on_click=getters.del_photo, when='media'),
         SwitchTo(Const('🔙Назад'), id='back', state=profileSG.start),

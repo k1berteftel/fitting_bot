@@ -6,18 +6,22 @@ from datetime import datetime
 
 from database.model import (UsersTable, UserPhotosTable, DeeplinksTable, AdminsTable,
                             OneTimeLinksIdsTable, RatesTable, VouchersTable, UserVouchersTable, PhotosTable, PriceTable,
-                            SubTermsTable)
+                            SubTermsTable, TextsTable)
 from utils.build_ids import get_random_id
 
 
 async def configurate_prices(sessions: async_sessionmaker):
     async with sessions() as session:
         await session.execute(insert(PriceTable).values(
-            amount=5
+            amount=1
         ))
         await session.execute(insert(SubTermsTable).values(
             watermark=False,
             background=True
+        ))
+        await session.execute(insert(TextsTable).values(
+            sub_text='Условия подписки',
+            ref_text='Условия реферальной программы'
         ))
         await session.commit()
 
@@ -62,6 +66,13 @@ class DataInteraction():
             ))
             await session.commit()
 
+    async def add_prizes(self, link: str, prize: int):
+        async with self._sessions() as session:
+            await session.execute(update(UsersTable).where(UsersTable.deeplink == link).values(
+                prizes=UsersTable.prizes + prize
+            ))
+            await session.commit()
+
     async def add_refs(self, link: str):
         async with self._sessions() as session:
             await session.execute(update(UsersTable).where(UsersTable.deeplink == link).values(
@@ -70,7 +81,7 @@ class DataInteraction():
             ))
             await session.commit()
 
-    async def add_user(self, user_id: int, username: str, name: str, join: str|None):
+    async def add_user(self, user_id: int, username: str, name: str, join: str|None, referral: str|None):
         if await self.check_user(user_id):
             return
         async with self._sessions() as session:
@@ -79,7 +90,8 @@ class DataInteraction():
                 username=username,
                 name=name,
                 deeplink=get_random_id(),
-                join=join
+                join=join,
+                referral=referral
             ))
             await session.commit()
 
@@ -141,6 +153,11 @@ class DataInteraction():
     async def get_gen_amount(self):
         async with self._sessions() as session:
             result = await session.scalar(select(PriceTable.amount))
+        return result
+
+    async def get_texts(self):
+        async with self._sessions() as session:
+            result = await session.scalar(select(TextsTable))
         return result
 
     async def get_sub_terms(self):
@@ -252,6 +269,12 @@ class DataInteraction():
                 price=price
             ))
             await session.commit()
+
+    async def set_text(self, **kwargs):
+        async with self._sessions() as session:
+            await session.execute(update(TextsTable).values(
+                kwargs
+            ))
 
     async def update_gen_amount(self, amount: int):
         async with self._sessions() as session:

@@ -61,7 +61,7 @@ user_dialog = Dialog(
         state=startSG.get_model
     ),
     Window(
-        Const('Выберите на какую часть тела будет производиться примерка одежды'),
+        Const('Выберите на какую часть тела будет производиться замена одежды'),
         Column(
             Button(Const('👕Вверх'), id='high_category_choose', on_click=getters.choose_category),
             Button(Const('👞Низ'), id='low_category_choose', on_click=getters.choose_category),

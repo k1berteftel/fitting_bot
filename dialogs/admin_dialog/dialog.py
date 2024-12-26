@@ -15,7 +15,8 @@ admin_dialog = Dialog(
         Button(Const('📊 Получить статистику'), id='get_static', on_click=getters.get_static),
         SwitchTo(Const('Управление привилегиями подписки'), id='sub_menu_switcher', state=adminSG.subs_menu),
         SwitchTo(Const('Управление тарифами'), id='rates_menu_switcher', state=adminSG.rates_menu),
-        SwitchTo(Const('Поменять стоимость генерации в яблоках'), id='get_gen_amount', state=adminSG.get_gen_amount),
+        SwitchTo(Const('Управление текстами'), id='texts_menu_switcher', state=adminSG.texts_menu),
+        SwitchTo(Const('Поменять стоимость генерации(не нужно)'), id='get_gen_amount', state=adminSG.get_gen_amount),
         SwitchTo(Const('Управление кодами ваучера'), id='vouchers_menu', state=adminSG.vouchers_menu),
         SwitchTo(Const('Управление фото'), id='photos_menu_switcher', state=adminSG.photos_menu),
         SwitchTo(Const('🔗 Управление диплинками'), id='deeplinks_menu_switcher', state=adminSG.deeplink_menu),
@@ -23,6 +24,25 @@ admin_dialog = Dialog(
         SwitchTo(Const('Сделать рассылку'), id='get_mail_switcher', state=adminSG.get_mail),
         Cancel(Const('Назад'), id='close_admin'),
         state=adminSG.start
+    ),
+    Window(
+        Format('Текст для меню подписки:\n {sub_text}\n\nТекст для меню рефелаки: {ref_text}'),
+        Column(
+            Button(Const('Поменять текст подписки'), id='sub_get_text_switcher', on_click=getters.get_text_switcher),
+            Button(Const('Поменять текст рефелаки'), id='ref_get_text_switcher', on_click=getters.get_text_switcher),
+        ),
+        SwitchTo(Const('🔙 Назад'), id='back', state=adminSG.start),
+        getter=getters.texts_menu_getter,
+        state=adminSG.texts_menu
+    ),
+    Window(
+        Const('Введите новый текст'),
+        TextInput(
+            id='get_text',
+            on_success=getters.get_text
+        ),
+        SwitchTo(Const('🔙 Назад'), id='back_texts_menu', state=adminSG.texts_menu),
+        state=adminSG.get_text
     ),
     Window(
         Const('Меню управления привилегиями подписки'),

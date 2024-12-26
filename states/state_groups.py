@@ -50,6 +50,8 @@ class adminSG(StatesGroup):
     get_gen_amount = State()
     subs_menu = State()
     get_photos_count = State()
+    texts_menu = State()
+    get_text = State()
 
 
 class profileSG(StatesGroup):
