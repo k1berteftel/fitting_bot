@@ -348,7 +348,7 @@ async def start_getter(event_from_user: User, dialog_manager: DialogManager, **k
     return {
         'username': user.username,
         'generations': user.generations,
-        'sub': f' до {user.sub.strftime('%d-%m-%Y')}' if user.sub else 'Отсутствует',
+        'sub': f" до {user.sub.strftime('%d-%m-%Y')}" if user.sub else 'Отсутствует',
     }
 
 
@@ -397,7 +397,7 @@ async def sub_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
     user = await session.get_user(event_from_user.id)
     texts = await session.get_texts()
     return {
-        'sub': f' до {user.sub.strftime('%d-%m-%Y')}' if user.sub else 'Отсутствует',
+        'sub': f" до {user.sub.strftime('%d-%m-%Y')}" if user.sub else 'Отсутствует',
         'text': texts.sub_text
     }
 
