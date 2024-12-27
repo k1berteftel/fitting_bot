@@ -348,8 +348,16 @@ async def start_getter(event_from_user: User, dialog_manager: DialogManager, **k
     return {
         'username': user.username,
         'generations': user.generations,
-        'sub': f' до {user.sub}' if user.sub else 'Отсутствует',
+        'sub': f' до {user.sub.strftime('%d-%m-%Y')}' if user.sub else 'Отсутствует',
     }
+
+
+async def close_payment(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
+    scheduler: AsyncIOScheduler = dialog_manager.middleware_data.get('scheduler')
+    job = scheduler.get_job(job_id=f'payment_{clb.from_user.id}')
+    if job:
+        job.remove()
+    await dialog_manager.switch_to(profileSG.start)
 
 
 async def payment_menu_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):
@@ -389,7 +397,7 @@ async def sub_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
     user = await session.get_user(event_from_user.id)
     texts = await session.get_texts()
     return {
-        'sub': f' до {user.sub}' if user.sub else 'Отсутствует',
+        'sub': f' до {user.sub.strftime('%d-%m-%Y')}' if user.sub else 'Отсутствует',
         'text': texts.sub_text
     }
 

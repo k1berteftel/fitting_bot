@@ -297,6 +297,7 @@ class DataInteraction():
             await session.execute(update(TextsTable).values(
                 kwargs
             ))
+            await session.commit()
 
     async def update_gen_amount(self, amount: int):
         async with self._sessions() as session:

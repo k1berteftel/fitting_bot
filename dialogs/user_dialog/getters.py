@@ -268,7 +268,7 @@ async def settings_switcher(clb: CallbackQuery, widget: Button, dialog_manager: 
         dialog_manager.dialog_data['param_2'] = False
     if param_3 is None:
         dialog_manager.dialog_data['param_3'] = True
-    if param_1 is None:
+    if param_4 is None:
         dialog_manager.dialog_data['param_4'] = True
     await dialog_manager.switch_to(startSG.settings_menu)
 

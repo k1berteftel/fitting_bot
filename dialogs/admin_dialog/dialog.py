@@ -165,7 +165,7 @@ admin_dialog = Dialog(
         state=adminSG.get_voucher
     ),
     Window(
-        Const('Введите кол-во яблок которые получит юзер при вводе кода ваучера'),
+        Const('Введите кол-во генераций которые получит юзер при вводе кода ваучера'),
         TextInput(
             id='get_voucher_amount',
             on_success=getters.get_voucher_amount

@@ -112,8 +112,8 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
         if user.sub:
             subs += 1
     counts = await session.get_counts()
-    text = (f'Всего юзеров в боте: {len(users)}\nИз них:\n{active} Активных\n{len(users) - active}\n\n'
-            f'Зашло в бота сегодня: {today}\nПровзаимодействовало с ботом сегодня: {activity}\n'
+    text = (f'Всего юзеров в боте: {len(users)}\nИз них: {active} Активных\nНеактивных: {len(users) - active}\n\n'
+            f'Зашло в бота сегодня: {today}\nВзаимодействовало с ботом сегодня: {activity}\n'
             f'Приобрело подписку: {subs}\n\nЗамен фона(всего): {counts.background}\n'
             f'Замен одежды(всего): {counts.images}')
     await clb.message.answer(text=text)
@@ -236,7 +236,7 @@ async def voucher_menu_getter(dialog_manager: DialogManager, **kwargs):
     vouchers = await session.get_vouchers()
     text = ''
     for voucher in vouchers:
-        text += f'{voucher.code} - {voucher.amount} яблок - {voucher.inputs} вождений\n'
+        text += f'{voucher.code} - {voucher.amount} генераций - {voucher.inputs} вождений\n'
     return {
         'codes': text
     }

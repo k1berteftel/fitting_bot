@@ -64,7 +64,7 @@ user_dialog = Dialog(
         Const('Выберите на какую часть тела будет производиться замена одежды'),
         Column(
             Button(Const('👕Вверх'), id='high_category_choose', on_click=getters.choose_category),
-            Button(Const('👞Низ'), id='low_category_choose', on_click=getters.choose_category),
+            Button(Const('🩳Низ'), id='low_category_choose', on_click=getters.choose_category),
             Button(Const('🧍Полный комплект'), id='full_category_choose', on_click=getters.choose_category),
         ),
         SwitchTo(Const('🔙Назад'), id='back_get_model', state=startSG.get_model),

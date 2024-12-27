@@ -91,5 +91,6 @@ async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: Asyn
                     chat_id=referral.user_id,
                     text=f'Вы получили {days} дополнительных дней подписки за счет покупки вашего реферала'
                 )
+        await bot.send_message(chat_id=user_id, text='✅Оплата прошла успешно')
         scheduler.remove_job(job_id=f'payment_{user_id}')
     return

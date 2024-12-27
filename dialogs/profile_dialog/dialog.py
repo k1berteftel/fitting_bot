@@ -46,7 +46,7 @@ profile_dialog = Dialog(
         Column(
             Url(Const('🔗Оплатить'), id='payment_link', url=Format('{url}')),
         ),
-        SwitchTo(Const('🔙Назад'), id='back_generations_menu', state=profileSG.generations_menu),
+        Button(Const('🔙Назад'), id='back_generations_menu', on_click=getters.close_payment),
         getter=getters.payment_menu_getter,
         state=profileSG.payment
     ),
