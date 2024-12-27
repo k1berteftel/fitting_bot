@@ -42,14 +42,18 @@ profile_dialog = Dialog(
         state=profileSG.generations_menu
     ),
     Window(
-        Const('Пожалуйста произведите оплату по данной ссылке и потом ❗️<b>обязательно</b>❗️ '
-              'после произведения оплаты не выходите из данного меню до ее подтверждения'),
+        Const('Для оплаты перейдите по ссылке ЮКасса. После оплаты дождитесь подтверждения.'),
         Column(
             Url(Const('🔗Оплатить'), id='payment_link', url=Format('{url}')),
         ),
         SwitchTo(Const('🔙Назад'), id='back_generations_menu', state=profileSG.generations_menu),
         getter=getters.payment_menu_getter,
         state=profileSG.payment
+    ),
+    Window(
+        Const('Оплата прошла успешно'),
+        SwitchTo(Const('🔙Вернуться на главное меню'), id='back', state=profileSG.start),
+        state=profileSG.success_payment
     ),
     Window(
         Format('<b>Подписка:</b> {sub}\n\n{text}'),

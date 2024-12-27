@@ -54,15 +54,14 @@ async def send_messages(bot: Bot, session: DataInteraction, keyboard: InlineKeyb
             await session.set_active(user.user_id, 0)
 
 
-async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: AsyncIOScheduler, session: DataInteraction, dialog_manager: DialogManager):
+async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: AsyncIOScheduler,
+                        session: DataInteraction, **kwargs):
     payment: PaymentResponse = await Payment.find_one(payment_id)
     if payment.paid:
-        scheduler.remove_job(job_id=f'payment_{user_id}')
         user = await session.get_user(user_id)
-        await bot.send_message(chat_id=user_id, text='Подтверждение оплаты')
-        amount = dialog_manager.dialog_data.get('amount')
-        if dialog_manager.dialog_data.get('type') == 'gen':
-            await bot.send_message(chat_id=user_id, text=f'Оплата была успешно произведена, к вам на баланс было зачислено {amount} генераций')
+        amount = kwargs.get('amount')
+        print(amount, kwargs.values(), kwargs.get('type'))
+        if kwargs.get('type') == 'gen':
             await session.update_user_generations(user_id, amount)
             if user.referral:
                 referral = await session.get_user_by_deeplink(user.referral)
@@ -73,8 +72,6 @@ async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: Asyn
                     chat_id=referral.user_id,
                     text=f'Вы получили {gens} дополнительных генераций за счет покупки вашего реферала'
                 )
-            scheduler.remove_job(job_id=f'payment_{user_id}')
-            await dialog_manager.switch_to(profileSG.generations_menu)
             return
         else:
             await session.update_user_sub(user_id, amount * 30)
@@ -94,6 +91,5 @@ async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: Asyn
                     chat_id=referral.user_id,
                     text=f'Вы получили {days} дополнительных дней подписки за счет покупки вашего реферала'
                 )
-            scheduler.remove_job(job_id=f'payment_{user_id}')
-            await dialog_manager.switch_to(profileSG.sub_menu)
-            return
+        scheduler.remove_job(job_id=f'payment_{user_id}')
+    return

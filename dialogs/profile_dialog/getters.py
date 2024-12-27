@@ -46,7 +46,7 @@ async def get_bg_image(msg: Message, widget: MessageInput, dialog_manager: Dialo
             print(err)
             await msg.answer('Извините, но фото в котором надо поменять фон не подлежит скачиванию, '
                              'попробуйте выбрать или загрузить другую фотографию')
-            await dialog_manager.switch_to(profileSG.photos_menu)
+            await dialog_manager.switch_to(profileSG.photos_menu, show_mode=ShowMode.DELETE_AND_SEND)
             return
     image = f'image_{msg.from_user.id}.png'
     try:
@@ -60,7 +60,7 @@ async def get_bg_image(msg: Message, widget: MessageInput, dialog_manager: Dialo
         await msg.answer('Во время замены фона что-то пошло не так, '
                          'пожалуйста попробуйте еще раз или обратитесь в поддержку')
         dialog_manager.dialog_data.clear()
-        await dialog_manager.switch_to(profileSG.photos_menu)
+        await dialog_manager.switch_to(profileSG.photos_menu, show_mode=ShowMode.DELETE_AND_SEND)
         return
     if not user.sub and terms.watermark:
         image = await add_watermark(result, msg.from_user.id)
@@ -81,7 +81,8 @@ async def get_bg_image(msg: Message, widget: MessageInput, dialog_manager: Dialo
     price = await session.get_gen_amount()
     await session.update_user_generations(msg.from_user.id, -price)
     dialog_manager.dialog_data.clear()
-    await dialog_manager.switch_to(profileSG.photos_menu)
+    await session.add_counts_background()
+    await dialog_manager.switch_to(profileSG.photos_menu, show_mode=ShowMode.DELETE_AND_SEND)
 
 
 async def get_bg_image_link(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
@@ -103,7 +104,7 @@ async def get_bg_image_link(msg: Message, widget: ManagedTextInput, dialog_manag
         print(err)
         await msg.answer('Извините, но фото для замены фона не подлежит скачиванию, '
                          'попробуйте выбрать или загрузить другую фотографию')
-        await dialog_manager.switch_to(profileSG.bg_photo_get)
+        await dialog_manager.switch_to(profileSG.bg_photo_get, show_mode=ShowMode.DELETE_AND_SEND)
         return
     image = dialog_manager.dialog_data.get('image')
     if not image.startswith('http'):
@@ -121,7 +122,7 @@ async def get_bg_image_link(msg: Message, widget: ManagedTextInput, dialog_manag
             print(err)
             await msg.answer('Извините, но фото в котором надо поменять фон не подлежит скачиванию, '
                              'попробуйте выбрать или загрузить другую фотографию')
-            await dialog_manager.switch_to(profileSG.photos_menu)
+            await dialog_manager.switch_to(profileSG.photos_menu, show_mode=ShowMode.DELETE_AND_SEND)
             return
     image = f'image_{msg.from_user.id}.png'
     try:
@@ -135,7 +136,7 @@ async def get_bg_image_link(msg: Message, widget: ManagedTextInput, dialog_manag
         await msg.answer('Во время замены фона что-то пошло не так, '
                          'пожалуйста попробуйте еще раз или обратитесь в поддержку')
         dialog_manager.dialog_data.clear()
-        await dialog_manager.switch_to(profileSG.photos_menu)
+        await dialog_manager.switch_to(profileSG.photos_menu, show_mode=ShowMode.DELETE_AND_SEND)
         return
     if not user.sub and terms.watermark:
         image = await add_watermark(result, msg.from_user.id)
@@ -156,7 +157,8 @@ async def get_bg_image_link(msg: Message, widget: ManagedTextInput, dialog_manag
     price = await session.get_gen_amount()
     await session.update_user_generations(msg.from_user.id, -price)
     dialog_manager.dialog_data.clear()
-    await dialog_manager.switch_to(profileSG.photos_menu)
+    await session.add_counts_background()
+    await dialog_manager.switch_to(profileSG.photos_menu, show_mode=ShowMode.DELETE_AND_SEND)
 
 
 async def get_image(msg: Message, widget: MessageInput, dialog_manager: DialogManager):
@@ -355,6 +357,7 @@ async def payment_menu_getter(event_from_user: User, dialog_manager: DialogManag
     scheduler: AsyncIOScheduler = dialog_manager.middleware_data.get('scheduler')
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     bot: Bot = dialog_manager.middleware_data.get('bot')
+    type = dialog_manager.dialog_data.get('type')
     payment = await Payment.create({
         "amount": {
             "value": str(float(price)),
@@ -365,13 +368,14 @@ async def payment_menu_getter(event_from_user: User, dialog_manager: DialogManag
             "return_url": "https://t.me/AidaLook_bot"
         },
         "capture": True,
-        "description": "Приобретение генераций" if dialog_manager.dialog_data.get('type') == 'gen' else "Приобретение подписки"
+        "description": "Приобретение генераций" if type == 'gen' else "Приобретение подписки"
     }, uuid.uuid4())
     url = payment.confirmation.confirmation_url
     scheduler.add_job(
         check_payment,
         'interval',
-        args=[payment.id, event_from_user.id, bot, scheduler, session, dialog_manager],
+        args=[payment.id, event_from_user.id, bot, scheduler, session],
+        kwargs={'amount': dialog_manager.dialog_data.get('amount'), 'type': type},
         id=f'payment_{event_from_user.id}',
         seconds=5
     )
@@ -407,7 +411,7 @@ async def get_voucher(msg: Message, widget: ManagedTextInput, dialog_manager: Di
     if await session.check_voucher(msg.from_user.id, text):
         amount = await session.voucher_amount(text)
         await session.update_user_generations(msg.from_user.id, amount)
-        await msg.answer(f'Код ваучера был успешно активирован, вы получили {amount} яблок')
+        await msg.answer(f'Код ваучера был успешно активирован, вы получили {amount} генераций')
     else:
         await msg.answer('Код ваучера неверен, пожалуйста попробуйте еще раз')
 

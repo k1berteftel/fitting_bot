@@ -179,6 +179,11 @@ async def choose_category(clb: CallbackQuery, widget: Button, dialog_manager: Di
     user = await session.get_user(clb.from_user.id)
     terms = await session.get_sub_terms()
     price = await session.get_gen_amount()
+    # получение параметров примерки
+    cover_feet = dialog_manager.dialog_data.get('param_1')
+    adjust_hands = dialog_manager.dialog_data.get('param_2')
+    restore_background = dialog_manager.dialog_data.get('param_3')
+    restore_clothes = dialog_manager.dialog_data.get('param_4')
     print(price)
     if user.generations < price:
         await clb.message.answer('К сожалению не хватает доступных генераций для примерки')
@@ -194,18 +199,22 @@ async def choose_category(clb: CallbackQuery, widget: Button, dialog_manager: Di
         result = await concatenate_images(
             cloth=cloth,
             model=model,
-            category=category
+            category=category,
+            cover_feet=bool(cover_feet),
+            adjust_hands=bool(adjust_hands),
+            restore_clothes=bool(restore_clothes),
+            restore_background=bool(restore_background)
         )
     except Exception as err:
         print(err)
         await clb.message.answer(
             'К сожалению во время процесса замены что-то пошло не так, пожалуйста попробуйте еще раз')
-        await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
+        await dialog_manager.switch_to(startSG.get_clothes, show_mode=ShowMode.DELETE_AND_SEND)
         return
     if not result:
         await clb.message.answer(
             'К сожалению во время процесса замены что-то пошло не так, пожалуйста попробуйте еще раз')
-        await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
+        await dialog_manager.switch_to(startSG.get_clothes, show_mode=ShowMode.DELETE_AND_SEND)
         return
     if not user.sub and terms.watermark:
         await clb.message.answer('Ваши результаты замены')
@@ -241,13 +250,26 @@ async def choose_category(clb: CallbackQuery, widget: Button, dialog_manager: Di
             os.remove(cloth)
         except Exception as err:
             print(err)
+    await session.add_counts_images()
     await session.update_user_generations(clb.from_user.id, -price)
     dialog_manager.dialog_data.clear()
-    await dialog_manager.start(startSG.get_clothes, mode=StartMode.RESET_STACK)
+    await dialog_manager.switch_to(startSG.get_clothes, show_mode=ShowMode.DELETE_AND_SEND)
 
 
 async def settings_switcher(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
     dialog_manager.dialog_data['back'] = clb.data.split('_')[0]
+    param_1 = dialog_manager.dialog_data.get('param_1')
+    param_2 = dialog_manager.dialog_data.get('param_2')
+    param_3 = dialog_manager.dialog_data.get('param_3')
+    param_4 = dialog_manager.dialog_data.get('param_4')
+    if param_1 is None:
+        dialog_manager.dialog_data['param_1'] = True
+    if param_2 is None:
+        dialog_manager.dialog_data['param_2'] = False
+    if param_3 is None:
+        dialog_manager.dialog_data['param_3'] = True
+    if param_1 is None:
+        dialog_manager.dialog_data['param_4'] = True
     await dialog_manager.switch_to(startSG.settings_menu)
 
 
@@ -262,13 +284,13 @@ async def settings_getter(dialog_manager: DialogManager, **kwargs):
     text_3 = '✅'
     text_4 = '✅'
 
-    if param_1 is None:
+    if not param_1:
         text_1 = '❌'
-    if param_2 is None:
+    if not param_2:
         text_2 = '❌'
-    if param_3 is None:
+    if not param_3:
         text_3 = '❌'
-    if param_4 is None:
+    if not param_4:
         text_4 = '❌'
 
     return {
@@ -280,10 +302,10 @@ async def settings_getter(dialog_manager: DialogManager, **kwargs):
 
 
 async def on_param(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
-    if dialog_manager.dialog_data.get(f'param_{clb.data.split("_")[0]}') is None:
+    if not dialog_manager.dialog_data.get(f'param_{clb.data.split("_")[0]}'):
         dialog_manager.dialog_data[f'param_{clb.data.split("_")[0]}'] = True
     else:
-        dialog_manager.dialog_data[f'param_{clb.data.split("_")[0]}'] = None
+        dialog_manager.dialog_data[f'param_{clb.data.split("_")[0]}'] = False
 
 
 async def back_switcher(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):

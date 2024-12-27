@@ -111,9 +111,11 @@ async def get_static(clb: CallbackQuery, widget: Button, dialog_manager: DialogM
             activity += 1
         if user.sub:
             subs += 1
+    counts = await session.get_counts()
     text = (f'Всего юзеров в боте: {len(users)}\nИз них:\n{active} Активных\n{len(users) - active}\n\n'
             f'Зашло в бота сегодня: {today}\nПровзаимодействовало с ботом сегодня: {activity}\n'
-            f'Приобрело подписку: {subs}')
+            f'Приобрело подписку: {subs}\n\nЗамен фона(всего): {counts.background}\n'
+            f'Замен одежды(всего): {counts.images}')
     await clb.message.answer(text=text)
 
 

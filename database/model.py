@@ -122,3 +122,11 @@ class TextsTable(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     sub_text: Mapped[str] = mapped_column(String)
     ref_text: Mapped[str] = mapped_column(String)
+
+
+class CountsTable(Base):
+    __tablename__ = 'counts'
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    images: Mapped[int] = mapped_column(Integer)
+    background: Mapped[int] =mapped_column(Integer)

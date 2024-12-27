@@ -6,7 +6,7 @@ from datetime import datetime
 
 from database.model import (UsersTable, UserPhotosTable, DeeplinksTable, AdminsTable,
                             OneTimeLinksIdsTable, RatesTable, VouchersTable, UserVouchersTable, PhotosTable, PriceTable,
-                            SubTermsTable, TextsTable)
+                            SubTermsTable, TextsTable, CountsTable)
 from utils.build_ids import get_random_id
 
 
@@ -22,6 +22,10 @@ async def configurate_prices(sessions: async_sessionmaker):
         await session.execute(insert(TextsTable).values(
             sub_text='Условия подписки',
             ref_text='Условия реферальной программы'
+        ))
+        await session.execute(insert(CountsTable).values(
+            images=0,
+            background=0
         ))
         await session.commit()
 
@@ -77,7 +81,6 @@ class DataInteraction():
         async with self._sessions() as session:
             await session.execute(update(UsersTable).where(UsersTable.deeplink == link).values(
                 refs=UsersTable.refs + 1,
-                generations=UsersTable.generations + 5
             ))
             await session.commit()
 
@@ -150,9 +153,28 @@ class DataInteraction():
             ))
             await session.commit()
 
+    async def add_counts_images(self):
+        async with self._sessions() as session:
+            await session.execute(update(CountsTable).values(
+                images=CountsTable.images + 1
+            ))
+            await session.commit()
+
+    async def add_counts_background(self):
+        async with self._sessions() as session:
+            await session.execute(update(CountsTable).values(
+                images=CountsTable.background + 1
+            ))
+            await session.commit()
+
     async def get_gen_amount(self):
         async with self._sessions() as session:
             result = await session.scalar(select(PriceTable.amount))
+        return result
+
+    async def get_counts(self):
+        async with self._sessions() as session:
+            result = await session.scalar(select(CountsTable))
         return result
 
     async def get_texts(self):
@@ -305,8 +327,10 @@ class DataInteraction():
                 ))
         if (await self.get_user(user_id)).sub:
             async with self._sessions() as session:
+                sub = await session.scalar(select(UsersTable.sub).where(UsersTable.user_id == user_id))
+                print(sub)
                 await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
-                    sub=UsersTable.sub + relativedelta(days=days)
+                    sub=sub + relativedelta(days=days)
                 ))
                 await session.commit()
         else:

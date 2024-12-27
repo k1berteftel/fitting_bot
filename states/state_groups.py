@@ -59,6 +59,7 @@ class profileSG(StatesGroup):
     generations_menu = State()
     choose_pay_method = State()
     payment = State()
+    success_payment = State()
     sub_menu = State()
     choose_sub_menu = State()
     ref_menu = State()

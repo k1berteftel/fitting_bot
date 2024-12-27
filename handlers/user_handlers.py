@@ -25,7 +25,6 @@ async def start_dialog(msg: Message, dialog_manager: DialogManager, session: Dat
             user_links = [i.deeplink for i in users]
             if args in user_links:
                 await session.add_refs(link=args)
-                await session.add_prizes(link=args, prize=5)
                 referral = args
         link_ids = await session.get_links()
         ids = [i.link for i in link_ids]

@@ -99,7 +99,7 @@ async def add_watermark(image: str, user_id: int) -> str:
     watermark_width, watermark_height = watermark.size
 
     # Масштабируем водяной знак (по ширине основного изображения)
-    new_width = int(image_width * 0.2)
+    new_width = int(image_width * 0.35)
     new_height = int(new_width * watermark_height / watermark_width)
     watermark = watermark.resize((new_width, new_height))
 

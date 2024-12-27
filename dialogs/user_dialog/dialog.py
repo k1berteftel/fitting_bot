@@ -12,7 +12,7 @@ from states.state_groups import startSG, adminSG, profileSG
 user_dialog = Dialog(
     Window(
         DynamicMedia('media', when='media'),
-        Const('Выберите фото одежды из своего портфолио или отправьте новое🆕'),
+        Const('Выберите фото одежды или отправьте новое'),
         TextInput(
             id='get_cloth',
             on_success=getters.get_cloth_link
