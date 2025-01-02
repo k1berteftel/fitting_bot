@@ -24,6 +24,7 @@ class UsersTable(Base):
     referral: Mapped[str] = mapped_column(VARCHAR, nullable=True, default=None)
     refs: Mapped[int] = mapped_column(BigInteger, default=0)  # Кол-во зашедших рефералов
     prizes: Mapped[int] = mapped_column(Integer, default=0)
+    days: Mapped[int] = mapped_column(Integer, default=0)
     active: Mapped[int] = mapped_column(Integer, default=1)
     activity: Mapped[DateTime] = mapped_column(DateTime, default=datetime.today())
 
@@ -122,6 +123,7 @@ class TextsTable(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     sub_text: Mapped[str] = mapped_column(String)
     ref_text: Mapped[str] = mapped_column(String)
+    info_text: Mapped[str] = mapped_column(String)
 
 
 class CountsTable(Base):

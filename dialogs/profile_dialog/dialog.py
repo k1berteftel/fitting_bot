@@ -19,10 +19,17 @@ profile_dialog = Dialog(
             SwitchTo(Const('✨Управление подпиской'), id='sub_menu_switcher', state=profileSG.sub_menu),
             SwitchTo(Const('🏦Реферальная программа'), id='ref_menu_switcher', state=profileSG.ref_menu),
             SwitchTo(Const('🖼Управление фотографиями'), id='photos_menu_switcher', state=profileSG.photos_menu),
+            SwitchTo(Const('🔎Информация'), id='info_menu_switcher', state=profileSG.info_menu),
         ),
         Cancel(Const('🔙Назад'), id='close_dialog'),
         getter=getters.start_getter,
         state=profileSG.start
+    ),
+    Window(
+        Format('{text}'),
+        SwitchTo(Const('🔙Назад'), id='back', state=profileSG.start),
+        getter=getters.info_menu_getter,
+        state=profileSG.info_menu
     ),
     Window(
         Const('<b>Выберите тариф генераций</b>'),
@@ -81,7 +88,8 @@ profile_dialog = Dialog(
         state=profileSG.choose_sub_menu
     ),
     Window(
-        Format('<b>Ваши рефералы:</b> {refs}\n<b>Вознаграждения(за все время):</b> {prizes}\n\n'
+        Format('<b>Ваши рефералы:</b> {refs}\n<b>Полученные генерации(за все время):</b> {prizes}\n'
+               '<b>Полученные дни подписки(за все время):</b> {days}\n\n'
                '<b>Ваша реферальная ссылка:</b> {link}\n{text}'),
         Column(
             Url(Const('Поделиться реферальной ссылкой'), id='ref_link', url=Format('{link}')),
@@ -115,7 +123,7 @@ profile_dialog = Dialog(
             Button(Const('▶️'), id='next_photo_page', on_click=getters.photo_pager, when='not_last'),
             when='media'
         ),
-        Button(Const('🌄Поменять у этого изображения фон'), id='get_bg_image_switcher', on_click=getters.get_bg_image_switcher, when='media'),
+        Button(Const('🌄Поменять фон у этой модели'), id='get_bg_image_switcher', on_click=getters.get_bg_image_switcher, when='media'),
         Button(Const('➕Добавить фото'), id='add_photo_switcher', on_click=getters.add_photo_switcher),
         Button(Const('🗑Удалить фото'), id='del_photo', on_click=getters.del_photo, when='media'),
         SwitchTo(Const('🔙Назад'), id='back', state=profileSG.start),

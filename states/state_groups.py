@@ -56,6 +56,7 @@ class adminSG(StatesGroup):
 
 class profileSG(StatesGroup):
     start = State()
+    info_menu = State()
     generations_menu = State()
     choose_pay_method = State()
     payment = State()

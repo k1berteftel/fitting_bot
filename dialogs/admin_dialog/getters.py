@@ -20,6 +20,8 @@ async def get_text(msg: Message, widget: ManagedTextInput, dialog_manager: Dialo
     type = dialog_manager.dialog_data.get('text')
     if type == 'sub':
         await session.set_text(sub_text=text)
+    elif type == 'info':
+        await session.set_text(info_text=text)
     else:
         await session.set_text(ref_text=text)
     await msg.answer('Текст был успешно обновлен')
@@ -37,7 +39,8 @@ async def texts_menu_getter(dialog_manager: DialogManager, **kwargs):
     texts = await session.get_texts()
     return {
         'sub_text': texts.sub_text,
-        'ref_text': texts.ref_text
+        'ref_text': texts.ref_text,
+        'info_text': texts.info_text
     }
 
 

@@ -26,10 +26,12 @@ admin_dialog = Dialog(
         state=adminSG.start
     ),
     Window(
-        Format('Текст для меню подписки:\n {sub_text}\n\nТекст для меню рефелаки: {ref_text}'),
+        Format('Текст для меню подписки:\n{sub_text}\n\nТекст для меню рефелаки:\n{ref_text}\n\n'
+               'Текст для меню информации:\n{info_text}'),
         Column(
             Button(Const('Поменять текст подписки'), id='sub_get_text_switcher', on_click=getters.get_text_switcher),
             Button(Const('Поменять текст рефелаки'), id='ref_get_text_switcher', on_click=getters.get_text_switcher),
+            Button(Const('Поменять текст информации'), id='info_get_text_switcher', on_click=getters.get_text_switcher),
         ),
         SwitchTo(Const('🔙 Назад'), id='back', state=adminSG.start),
         getter=getters.texts_menu_getter,

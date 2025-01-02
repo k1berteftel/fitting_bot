@@ -71,7 +71,7 @@ user_dialog = Dialog(
         state=startSG.choose_category
     ),
     Window(
-        Const('Тут вы можете настроить точечные моменты примерки'),
+        Const('Тонкие настройки генерации могут улучшить качество'),
         Column(
             Button(Format('{param_1}|Разрешить длинной одежде прикрывать(менять) ноги/обувь'), id='1_param', on_click=getters.on_param),
             Button(Format('{param_2}|Разрешить изменение внешнего вида рук модели'), id='2_param', on_click=getters.on_param),

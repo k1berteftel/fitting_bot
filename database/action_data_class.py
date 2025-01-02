@@ -21,7 +21,8 @@ async def configurate_prices(sessions: async_sessionmaker):
         ))
         await session.execute(insert(TextsTable).values(
             sub_text='Условия подписки',
-            ref_text='Условия реферальной программы'
+            ref_text='Условия реферальной программы',
+            info_text='Текст информации'
         ))
         await session.execute(insert(CountsTable).values(
             images=0,
@@ -74,6 +75,13 @@ class DataInteraction():
         async with self._sessions() as session:
             await session.execute(update(UsersTable).where(UsersTable.deeplink == link).values(
                 prizes=UsersTable.prizes + prize
+            ))
+            await session.commit()
+
+    async def update_user_days(self, user_id: int, days: int):
+        async with self._sessions() as session:
+            await session.execute(update(UsersTable).where(UsersTable.user_id == user_id).values(
+                prizes=UsersTable.days + days
             ))
             await session.commit()
 

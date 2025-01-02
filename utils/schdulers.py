@@ -72,7 +72,6 @@ async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: Asyn
                     chat_id=referral.user_id,
                     text=f'Вы получили {gens} дополнительных генераций за счет покупки вашего реферала'
                 )
-            return
         else:
             await session.update_user_sub(user_id, amount * 30)
             if not scheduler.get_job(job_id=str(user_id)):
@@ -87,6 +86,7 @@ async def check_payment(payment_id: any, user_id: int, bot: Bot, scheduler: Asyn
                 days = int(round(amount * 30 * 0.3))
                 referral = await session.get_user_by_deeplink(user.referral)
                 await session.update_user_sub(referral.user_id, days=days)
+                await session.update_user_days(referral.user_id, days=days)
                 await bot.send_message(
                     chat_id=referral.user_id,
                     text=f'Вы получили {days} дополнительных дней подписки за счет покупки вашего реферала'

@@ -22,6 +22,12 @@ Configuration.account_id = 286317
 Configuration.secret_key = 'live_ZWfufpazd2XRr68N5w8U6gLel2YnN4CQXFyPlJWXPN0'
 
 
+async def info_menu_getter(dialog_manager: DialogManager, **kwargs):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    texts = await session.get_texts()
+    return {'text': texts.info_text}
+
+
 async def get_bg_image(msg: Message, widget: MessageInput, dialog_manager: DialogManager):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     bot: Bot = dialog_manager.middleware_data.get('bot')
@@ -205,7 +211,7 @@ async def get_bg_image_switcher(clb: CallbackQuery, widget: Button, dialog_manag
     user = await session.get_user(clb.from_user.id)
     price = await session.get_gen_amount()
     if user.sub and user.generations < price:
-        await clb.message.answer('К сожалению у вас не достаточно яблок для добавления заднего фона')
+        await clb.message.answer('К сожалению у вас не достаточно генераций для добавления заднего фона')
         return
     terms = await session.get_sub_terms()
     if not user.sub and not terms.background:
@@ -375,6 +381,22 @@ async def payment_menu_getter(event_from_user: User, dialog_manager: DialogManag
             "type": "redirect",
             "return_url": "https://t.me/AidaLook_bot"
         },
+        "receipt": {
+            "customer": {
+                "email": "kkulis985@gmail.com"
+            },
+            'items': [
+                {
+                    'description': "Приобретение генераций" if type == 'gen' else "Приобретение подписки",
+                    "amount": {
+                        "value": str(float(price)),
+                        "currency": "RUB"
+                    },
+                    'vat_code': 1,
+                    'quantity': 1
+                }
+            ]
+        },
         "capture": True,
         "description": "Приобретение генераций" if type == 'gen' else "Приобретение подписки"
     }, uuid.uuid4())
@@ -409,6 +431,7 @@ async def ref_menu_getter(event_from_user: User, dialog_manager: DialogManager, 
     return {
         'refs': user.refs,
         'prizes': user.prizes,
+        'days': user.days,
         'link': f'http://t.me/share/url?url=t.me/AidaLook_bot?start={user.deeplink}',
         'text': texts.ref_text
     }
