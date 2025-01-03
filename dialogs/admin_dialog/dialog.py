@@ -27,10 +27,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Format('Текст для меню подписки:\n{sub_text}\n\nТекст для меню рефелаки:\n{ref_text}\n\n'
-               'Текст для меню информации:\n{info_text}'),
+               'Текст для меню информации:\n{info_text}\n\nТекст меню управления фотографиями:\n{image_text}'),
         Column(
             Button(Const('Поменять текст подписки'), id='sub_get_text_switcher', on_click=getters.get_text_switcher),
             Button(Const('Поменять текст рефелаки'), id='ref_get_text_switcher', on_click=getters.get_text_switcher),
+            Button(Const('Поменять текст фотографий'), id='image_get_text_switcher', on_click=getters.get_text_switcher),
             Button(Const('Поменять текст информации'), id='info_get_text_switcher', on_click=getters.get_text_switcher),
         ),
         SwitchTo(Const('🔙 Назад'), id='back', state=adminSG.start),
@@ -99,7 +100,7 @@ admin_dialog = Dialog(
             when='model'
         ),
         SwitchTo(Const('Добавить новое фото'), id='add_model_photo_switcher', state=adminSG.add_model_photo),
-        Button(Const('Удалить фото'), id='del_photo', on_click=getters.del_photo),
+        Button(Const('Удалить фото'), id='del_photo', on_click=getters.del_model_photo),
         SwitchTo(Const('Назад'), id='back_photos_menu', state=adminSG.photos_menu),
         getter=getters.model_getter,
         state=adminSG.model_photos
@@ -128,7 +129,7 @@ admin_dialog = Dialog(
             when='model'
         ),
         SwitchTo(Const('Добавить новое фото'), id='add_model_photo_switcher', state=adminSG.add_cloth_photo),
-        Button(Const('Удалить фото'), id='del_photo', on_click=getters.del_photo),
+        Button(Const('Удалить фото'), id='del_photo', on_click=getters.del_cloth_photo),
         SwitchTo(Const('Назад'), id='back_photos_menu', state=adminSG.photos_menu),
         getter=getters.cloth_getter,
         state=adminSG.cloth_photos
@@ -351,12 +352,21 @@ admin_dialog = Dialog(
         Format('🔗 *Меню управления диплинками*\n\n'
                '🎯 *Имеющиеся диплинки*:\n{links}'),
         Column(
-            Button(Const('➕ Добавить диплинк'), id='add_deeplink', on_click=getters.add_deeplink),
+            SwitchTo(Const('➕ Добавить диплинк'), id='add_deeplink', state=adminSG.get_deeplink_name),
             SwitchTo(Const('❌ Удалить диплинки'), id='del_deeplinks', state=adminSG.deeplink_del),
         ),
         SwitchTo(Const('🔙 Назад'), id='back', state=adminSG.start),
         getter=getters.deeplink_menu_getter,
         state=adminSG.deeplink_menu
+    ),
+    Window(
+        Const('Введите название ссылки'),
+        TextInput(
+            id='get_deeplink_name',
+            on_success=getters.get_deeplink_name,
+        ),
+        SwitchTo(Const('🔙 Назад'), id='deeplinks_back', state=adminSG.deeplink_menu),
+        state=adminSG.get_deeplink_name
     ),
     Window(
         Const('❌ Выберите диплинк для удаления'),
@@ -422,12 +432,13 @@ admin_dialog = Dialog(
         state=adminSG.get_mail
     ),
     Window(
-        Const('Введите время в которое сообщение должно разослаться всем юзерам'),
+        Const('Введите время в которое сообщение должно разослаться всем юзерам в формате:'
+              ' часы:минуты (18:00 или 22:30)'),
         TextInput(
             id='get_time',
             on_success=getters.get_time
         ),
-        SwitchTo(Const('Продолжить без автоудаления'), id='get_keyboard_switcher', state=adminSG.get_keyboard),
+        SwitchTo(Const('Продолжить без отложки'), id='get_keyboard_switcher', state=adminSG.get_keyboard),
         SwitchTo(Const('Назад'), id='back_get_mail', state=adminSG.get_mail),
         state=adminSG.get_time
     ),

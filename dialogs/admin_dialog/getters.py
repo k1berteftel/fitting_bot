@@ -22,6 +22,8 @@ async def get_text(msg: Message, widget: ManagedTextInput, dialog_manager: Dialo
         await session.set_text(sub_text=text)
     elif type == 'info':
         await session.set_text(info_text=text)
+    elif type == 'image':
+        await session.set_text(image_text=text)
     else:
         await session.set_text(ref_text=text)
     await msg.answer('Текст был успешно обновлен')
@@ -40,7 +42,8 @@ async def texts_menu_getter(dialog_manager: DialogManager, **kwargs):
     return {
         'sub_text': texts.sub_text,
         'ref_text': texts.ref_text,
-        'info_text': texts.info_text
+        'info_text': texts.info_text,
+        'image_text': texts.image_text
     }
 
 
@@ -139,6 +142,14 @@ async def get_cloth_photo(msg: Message, widget: MessageInput, dialog_manager: Di
     await dialog_manager.switch_to(adminSG.cloth_photos)
 
 
+async def del_cloth_photo(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
+    session: DataInteraction = dialog_manager.middleware_data.get('session')
+    photos = await session.get_photos_by_category('cloth')
+    page = dialog_manager.dialog_data.get('page')
+    await session.del_photo(photos[page])
+    await clb.answer('Фото было успешно удаленно')
+
+
 async def cloth_getter(dialog_manager: DialogManager, event_from_user: User, **kwargs):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     photos = await session.get_photos_by_category('cloth')
@@ -218,7 +229,7 @@ async def model_getter(dialog_manager: DialogManager, event_from_user: User, **k
     }
 
 
-async def del_photo(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
+async def del_model_photo(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
     photos = await session.get_photos_by_category('model')
     page = dialog_manager.dialog_data.get('page')
@@ -445,14 +456,14 @@ async def deeplink_menu_getter(dialog_manager: DialogManager, **kwargs):
                 activity += 1
             if user.sub:
                 subs += 1
-        text += (f'({link.id})https://t.me/AidaLook_bot?start={link.link}: {link.entry}\nЗашло: {len(users)}'
+        text += (f'({link.name})https://t.me/AidaLook_bot?start={link.link}: {link.entry}\nЗашло: {len(users)}'
                  f', активных: {active}, зашло сегодня: {today}, приобрели подписку: {subs}, активны в последние 24 часа: {activity}\n')
     return {'links': text}
 
 
-async def add_deeplink(clb: CallbackQuery, widget: Button, dialog_manager: DialogManager):
+async def get_deeplink_name(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
     session: DataInteraction = dialog_manager.middleware_data.get('session')
-    await session.add_deeplink(get_random_id())
+    await session.add_deeplink(name=text, link=get_random_id())
     await dialog_manager.switch_to(adminSG.deeplink_menu)
 
 
@@ -468,7 +479,7 @@ async def del_deeplink_getter(dialog_manager: DialogManager, **kwargs):
     links: list[DeeplinksTable] = await session.get_deeplinks()
     buttons = []
     for link in links:
-        buttons.append((f'({link.id}){link.link}: {link.entry}', link.link))
+        buttons.append((f'({link.name}){link.link}: {link.entry}', link.link))
     return {'items': buttons}
 
 

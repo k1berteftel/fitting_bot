@@ -19,6 +19,7 @@ class adminSG(StatesGroup):
     get_time = State()
     confirm_mail = State()
     deeplink_menu = State()
+    get_deeplink_name = State()
     deeplink_del = State()
     admin_menu = State()
     admin_del = State()

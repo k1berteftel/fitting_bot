@@ -43,6 +43,7 @@ class DeeplinksTable(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
+    name: Mapped[str] = mapped_column(VARCHAR)
     link: Mapped[str] = mapped_column(VARCHAR)
     entry: Mapped[int] = mapped_column(BigInteger, default=0)
 
@@ -80,7 +81,7 @@ class VouchersTable(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
     code: Mapped[str] = mapped_column(String, unique=True)
-    amount: Mapped[int] = mapped_column(Integer, unique=True)
+    amount: Mapped[int] = mapped_column(Integer)
     inputs: Mapped[int] = mapped_column(Integer, default=0)
 
 
@@ -124,6 +125,7 @@ class TextsTable(Base):
     sub_text: Mapped[str] = mapped_column(String)
     ref_text: Mapped[str] = mapped_column(String)
     info_text: Mapped[str] = mapped_column(String)
+    image_text: Mapped[str] = mapped_column(String)
 
 
 class CountsTable(Base):

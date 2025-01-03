@@ -22,7 +22,8 @@ async def configurate_prices(sessions: async_sessionmaker):
         await session.execute(insert(TextsTable).values(
             sub_text='Условия подписки',
             ref_text='Условия реферальной программы',
-            info_text='Текст информации'
+            info_text='Текст информации',
+            image_text='Работа с фото модели и фоном. Фон меняется при подписке на бота'
         ))
         await session.execute(insert(CountsTable).values(
             images=0,
@@ -114,9 +115,10 @@ class DataInteraction():
             ))
             await session.commit()
 
-    async def add_deeplink(self, link: str):
+    async def add_deeplink(self, name: str, link: str):
         async with self._sessions() as session:
             await session.execute(insert(DeeplinksTable).values(
+                name=name,
                 link=link
             ))
             await session.commit()

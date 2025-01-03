@@ -286,7 +286,9 @@ async def photos_menu_getter(event_from_user: User, dialog_manager: DialogManage
         terms = await session.get_sub_terms()
         if terms.background:
             sub = '✅'
+    texts = await session.get_texts()
     return {
+        'text': texts.image_text,
         'sub': sub,
         'media': photo,
         'not_first': not_first,
@@ -363,7 +365,7 @@ async def close_payment(clb: CallbackQuery, widget: Button, dialog_manager: Dial
     job = scheduler.get_job(job_id=f'payment_{clb.from_user.id}')
     if job:
         job.remove()
-    await dialog_manager.switch_to(profileSG.start)
+    await dialog_manager.switch_to(profileSG.start, show_mode=ShowMode.DELETE_AND_SEND)
 
 
 async def payment_menu_getter(event_from_user: User, dialog_manager: DialogManager, **kwargs):

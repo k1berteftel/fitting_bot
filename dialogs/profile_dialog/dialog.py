@@ -109,7 +109,7 @@ profile_dialog = Dialog(
     ),
     Window(
         DynamicMedia('media', when='media'),
-        Format('Работа с фото модели и фоном. Фон меняется при подписке на бота'),
+        Format('{text}'),
         TextInput(
             id='get_image',
             on_success=getters.get_image_link
@@ -131,7 +131,7 @@ profile_dialog = Dialog(
         state=profileSG.photos_menu
     ),
     Window(
-        Const('Отправьте ссылку изображения или само изображение для замены фона'),
+        Const('Отправьте изображение или ссылку на него для замены фона'),
         TextInput(
             id='get_bg_image',
             on_success=getters.get_bg_image_link
