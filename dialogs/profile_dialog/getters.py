@@ -211,14 +211,14 @@ async def get_bg_image_switcher(clb: CallbackQuery, widget: Button, dialog_manag
     user = await session.get_user(clb.from_user.id)
     price = await session.get_gen_amount()
     if user.sub and user.generations < price:
-        await clb.message.answer('К сожалению у вас не достаточно генераций для добавления заднего фона')
+        await clb.answer('К сожалению у вас не достаточно генераций для добавления заднего фона')
         return
     terms = await session.get_sub_terms()
     if not user.sub and not terms.background:
-        await clb.message.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
+        await clb.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
         return
     if not user.sub and user.generations < price:
-        await clb.message.answer('К сожалению не хватает генераций для примерки')
+        await clb.answer('К сожалению не хватает генераций для примерки')
         return
     photo_id = dialog_manager.dialog_data.get('id')
     photo = await session.get_user_photo(photo_id)

@@ -173,7 +173,7 @@ class DataInteraction():
     async def add_counts_background(self):
         async with self._sessions() as session:
             await session.execute(update(CountsTable).values(
-                images=CountsTable.background + 1
+                background=CountsTable.background + 1
             ))
             await session.commit()
 

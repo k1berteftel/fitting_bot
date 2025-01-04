@@ -135,7 +135,7 @@ admin_dialog = Dialog(
         state=adminSG.cloth_photos
     ),
     Window(
-        Const('Отправьте саму фотографию модели или ссылку на нее'),
+        Const('Отправьте саму фотографию одежды или ссылку на нее'),
         TextInput(
             id='get_model',
             on_success=getters.get_cloth_link

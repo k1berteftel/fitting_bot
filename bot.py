@@ -40,10 +40,10 @@ config: Config = load_config()
 
 async def main():
     database = PostgresBuild(config.db.dns)
-    #await database.drop_tables(Base)
-    #await database.create_tables(Base)
+    await database.drop_tables(Base)
+    await database.create_tables(Base)
     session = database.session()
-    #await configurate_prices(session)
+    await configurate_prices(session)
 
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
     scheduler.start()
