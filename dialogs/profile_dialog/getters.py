@@ -176,7 +176,7 @@ async def get_image(msg: Message, widget: MessageInput, dialog_manager: DialogMa
         return
     terms = await session.get_sub_terms()
     if not user.sub and not terms.background:
-        await msg.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
+        await msg.answer('Эта функция доступна по подписке')
         return
     if not user.sub and user.generations < price:
         await msg.answer('К сожалению не хватает генераций для примерки')
@@ -197,7 +197,7 @@ async def get_image_link(msg: Message, widget: ManagedTextInput, dialog_manager:
         return
     terms = await session.get_sub_terms()
     if not user.sub and not terms.background:
-        await msg.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
+        await msg.answer('Эта функция доступна по подписке')
         return
     if not user.sub and user.generations < price:
         await msg.answer('К сожалению не хватает генераций для примерки')
@@ -215,7 +215,7 @@ async def get_bg_image_switcher(clb: CallbackQuery, widget: Button, dialog_manag
         return
     terms = await session.get_sub_terms()
     if not user.sub and not terms.background:
-        await clb.answer('К сожалению пока что это функция доступна только юзерам с подпиской')
+        await clb.answer('Эта функция доступна по подписке')
         return
     if not user.sub and user.generations < price:
         await clb.answer('К сожалению не хватает генераций для примерки')

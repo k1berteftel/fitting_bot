@@ -131,7 +131,7 @@ profile_dialog = Dialog(
         state=profileSG.photos_menu
     ),
     Window(
-        Const('Отправьте изображение или ссылку на него для замены фона'),
+        Const('Отправьте изображение фона для замены в сообщении снизу'),
         TextInput(
             id='get_bg_image',
             on_success=getters.get_bg_image_link
@@ -144,7 +144,7 @@ profile_dialog = Dialog(
         state=profileSG.bg_photo_get
     ),
     Window(
-        Const('Отправьте фотографию модели или ссылку на нее'),
+        Const('Отправьте свое фото модели в сообщении внизу. На этом фото вы сможете менять одежду или фон'),
         TextInput(
             id='get_model',
             on_success=getters.get_link
