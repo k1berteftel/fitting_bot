@@ -1,4 +1,4 @@
-from typing import Any, Optional, Self
+from typing import Any, Optional
 
 import ormsgpack
 from aiogram.filters.state import StateType
@@ -35,7 +35,7 @@ class NatsStorage(BaseStorage):
         self.fsm_data_bucket = fsm_data_bucket
         self._key_builder = key_builder
 
-    async def create_storage(self) -> Self:
+    async def create_storage(self):
         self.kv_states = await self._get_kv_states()
         self.kv_data = await self._get_kv_data()
         return self

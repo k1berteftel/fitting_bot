@@ -192,7 +192,7 @@ async def choose_category(clb: CallbackQuery, widget: Button, dialog_manager: Di
             ]]
         )
         await clb.message.answer(
-            'К сожалению не хватает доступных генераций для примерки',
+            'К сожалению у Вас нет доступных генераций для замены',
             reply_markup=keyboard
         )
         return
