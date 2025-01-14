@@ -531,13 +531,12 @@ async def get_mail(msg: Message, widget: MessageInput, dialog_manager: DialogMan
 
 async def get_time(msg: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
     try:
-        times = text.split(':')
-        time = datetime.time(hour=int(times[0]), minute=int(times[1]))
+        time = datetime.datetime.strptime(text, '%X:%d:%m')
     except Exception as err:
         print(err)
         await msg.answer('Вы ввели данные не в том формате, пожалуйста попробуйте снова')
         return
-    dialog_manager.dialog_data['time'] = [time.hour, time.minute]
+    dialog_manager.dialog_data['time'] = text
     await dialog_manager.switch_to(adminSG.get_keyboard)
 
 
@@ -584,8 +583,7 @@ async def start_malling(clb: CallbackQuery, widget: Button, dialog_manager: Dial
                 await session.set_active(user.user_id, 0)
         await clb.answer('Рассылка прошла успешно')
     else:
-        today = datetime.datetime.today()
-        date = datetime.datetime(year=today.year, month=today.month, day=today.day, hour=time[0], minute=time[1])
+        date = time.strptime('%X:%d:%m')
         scheduler.add_job(
             func=send_messages,
             args=[bot, session, InlineKeyboardMarkup(inline_keyboard=[keyboard]) if keyboard else None, message],

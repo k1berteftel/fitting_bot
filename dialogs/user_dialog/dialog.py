@@ -37,7 +37,7 @@ user_dialog = Dialog(
     ),
     Window(
         DynamicMedia('media', when='media'),
-        Const('Выберите фото человека из загруженных или отправьте новое в сообщении ниже'),
+        Const('Отправьте фото человека в сообщении ниже или выберите из загруженных в профиле'),
         TextInput(
             id='get_model',
             on_success=getters.get_model_link

@@ -3,7 +3,7 @@ import uuid
 import os
 from aiohttp import ClientSession
 from aiogram import Bot
-from aiogram.types import CallbackQuery, User, Message, ContentType, FSInputFile
+from aiogram.types import CallbackQuery, User, Message, ContentType, FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.kbd import Button, Select, ManagedMultiselect
@@ -172,14 +172,29 @@ async def get_image(msg: Message, widget: MessageInput, dialog_manager: DialogMa
     user = await session.get_user(msg.from_user.id)
     price = await session.get_gen_amount()
     if user.sub and user.generations < price:
-        await msg.answer('К сожалению у вас не достаточно генераций для добавления заднего фона')
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
+            ]]
+        )
+        await msg.answer('К сожалению у вас не достаточно генераций для добавления заднего фона', reply_markup=keyboard)
         return
     terms = await session.get_sub_terms()
     if not user.sub and not terms.background:
-        await msg.answer('Эта функция доступна по подписке')
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(text='Купить подписку', callback_data='buy_sub')
+            ]]
+        )
+        await msg.answer('Эта функция доступна по подписке', reply_markup=keyboard)
         return
     if not user.sub and user.generations < price:
-        await msg.answer('К сожалению не хватает генераций для примерки')
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
+            ]]
+        )
+        await msg.answer('К сожалению не хватает генераций для примерки', reply_markup=keyboard)
         return
     dialog_manager.dialog_data['image'] = msg.photo[-1].file_id
     await dialog_manager.switch_to(profileSG.bg_photo_get)
@@ -193,14 +208,29 @@ async def get_image_link(msg: Message, widget: ManagedTextInput, dialog_manager:
     user = await session.get_user(msg.from_user.id)
     price = await session.get_gen_amount()
     if user.sub and user.generations < price:
-        await msg.answer('К сожалению у вас не достаточно генераций для добавления заднего фона')
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
+            ]]
+        )
+        await msg.answer('К сожалению у вас не достаточно генераций для добавления заднего фона', reply_markup=keyboard)
         return
     terms = await session.get_sub_terms()
     if not user.sub and not terms.background:
-        await msg.answer('Эта функция доступна по подписке')
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(text='Купить подписку', callback_data='buy_sub')
+            ]]
+        )
+        await msg.answer('Эта функция доступна по подписке', reply_markup=keyboard)
         return
     if not user.sub and user.generations < price:
-        await msg.answer('К сожалению не хватает генераций для примерки')
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
+            ]]
+        )
+        await msg.answer('К сожалению не хватает генераций для примерки', reply_markup=keyboard)
         return
     dialog_manager.dialog_data['image'] = text
     await dialog_manager.switch_to(profileSG.bg_photo_get)
@@ -211,14 +241,29 @@ async def get_bg_image_switcher(clb: CallbackQuery, widget: Button, dialog_manag
     user = await session.get_user(clb.from_user.id)
     price = await session.get_gen_amount()
     if user.sub and user.generations < price:
-        await clb.answer('К сожалению у вас не достаточно генераций для добавления заднего фона')
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
+            ]]
+        )
+        await clb.message.answer('К сожалению у вас не достаточно генераций для добавления заднего фона', reply_markup=keyboard)
         return
     terms = await session.get_sub_terms()
     if not user.sub and not terms.background:
-        await clb.answer('Эта функция доступна по подписке')
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(text='Купить подписку', callback_data='buy_sub')
+            ]]
+        )
+        await clb.message.answer('Эта функция доступна по подписке', reply_markup=keyboard)
         return
     if not user.sub and user.generations < price:
-        await clb.answer('К сожалению не хватает генераций для примерки')
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
+            ]]
+        )
+        await clb.message.answer('К сожалению не хватает генераций для примерки', reply_markup=keyboard)
         return
     photo_id = dialog_manager.dialog_data.get('id')
     photo = await session.get_user_photo(photo_id)
@@ -254,7 +299,12 @@ async def add_photo_switcher(clb: CallbackQuery, widget: Button, dialog_manager:
             return
     else:
         if len(photos) >= 2:
-            await clb.answer('Больше фото при подписке на бота')
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[[
+                    InlineKeyboardButton(text='Купить подписку', callback_data='buy_sub')
+                ]]
+            )
+            await clb.message.answer('Больше фото при подписке на бота', reply_markup=keyboard)
             return
     await dialog_manager.switch_to(profileSG.add_photo)
 

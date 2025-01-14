@@ -5,7 +5,7 @@ from aiogram_dialog import DialogManager, StartMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from database.action_data_class import DataInteraction
-from states.state_groups import startSG
+from states.state_groups import startSG, profileSG
 
 
 user_router = Router()
@@ -40,3 +40,12 @@ async def start_dialog(msg: Message, dialog_manager: DialogManager, session: Dat
     await session.add_user(msg.from_user.id, msg.from_user.username if msg.from_user.username else 'Отсутствует',
                            msg.from_user.full_name, join=deeplink, referral=referral)
     await dialog_manager.start(state=startSG.get_clothes, mode=StartMode.RESET_STACK)
+
+
+@user_router.callback_query(F.data.in_(['buy_generations', 'buy_sub']))
+async def start_buy_gens(clb: CallbackQuery, dialog_manager: DialogManager):
+    data = clb.data.split('_')
+    if data[1].startswith('gen'):
+        await dialog_manager.start(profileSG.generations_menu, mode=StartMode.RESET_STACK)
+    else:
+        await dialog_manager.start(profileSG.choose_sub_menu, mode=StartMode.RESET_STACK)

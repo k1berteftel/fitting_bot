@@ -9,6 +9,8 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
+from storage.nats_storage import NatsStorage
+from utils.nats_connect import connect_to_nats
 from database.build import PostgresBuild
 from database.model import Base
 from database.action_data_class import configurate_prices
@@ -40,16 +42,19 @@ config: Config = load_config()
 
 async def main():
     database = PostgresBuild(config.db.dns)
-    await database.drop_tables(Base)
-    await database.create_tables(Base)
+    #await database.drop_tables(Base)
+    #await database.create_tables(Base)
     session = database.session()
-    await configurate_prices(session)
+    #await configurate_prices(session)
 
     scheduler: AsyncIOScheduler = AsyncIOScheduler()
     scheduler.start()
 
+    nc, js = await connect_to_nats(servers=config.nats.servers)
+    storage: NatsStorage = await NatsStorage(nc=nc, js=js).create_storage()
+
     bot = Bot(token=config.bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp = Dispatcher()
+    dp = Dispatcher(storage=storage)
 
     # подключаем роутеры
     dp.include_routers(user_router, *get_dialogs())
@@ -63,7 +68,13 @@ async def main():
     setup_dialogs(dp)
     logger.info('Bot start polling')
 
-    await dp.start_polling(bot, _session=session, _scheduler=scheduler)
+    try:
+        await dp.start_polling(bot, _scheduler=scheduler, _session=session)
+    except Exception as e:
+        logger.exception(e)
+    finally:
+        await nc.close()
+        logger.info('Connection to NATS closed')
 
 
 if __name__ == "__main__":

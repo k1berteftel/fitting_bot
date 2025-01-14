@@ -2,7 +2,7 @@ import os
 
 from aiohttp import ClientSession
 from aiogram import Bot
-from aiogram.types import CallbackQuery, User, Message, ContentType, URLInputFile, FSInputFile
+from aiogram.types import CallbackQuery, User, Message, ContentType, URLInputFile, FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram_dialog import DialogManager, ShowMode, StartMode
 from aiogram_dialog.api.entities import MediaAttachment, MediaId
 from aiogram_dialog.widgets.kbd import Button, Select, ManagedMultiselect
@@ -186,7 +186,15 @@ async def choose_category(clb: CallbackQuery, widget: Button, dialog_manager: Di
     restore_clothes = dialog_manager.dialog_data.get('param_4')
     print(price)
     if user.generations < price:
-        await clb.message.answer('К сожалению не хватает доступных генераций для примерки')
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[[
+                InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
+            ]]
+        )
+        await clb.message.answer(
+            'К сожалению не хватает доступных генераций для примерки',
+            reply_markup=keyboard
+        )
         return
     model = dialog_manager.dialog_data.get('model')
     if not model.startswith('http'):
