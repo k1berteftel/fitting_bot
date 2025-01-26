@@ -175,7 +175,7 @@ async def get_image(msg: Message, widget: MessageInput, dialog_manager: DialogMa
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
-            ]]
+            ], [InlineKeyboardButton(text='Назад', callback_data='close_widget')]]
         )
         await msg.answer('К сожалению у вас не достаточно генераций для добавления заднего фона', reply_markup=keyboard)
         return
@@ -184,7 +184,7 @@ async def get_image(msg: Message, widget: MessageInput, dialog_manager: DialogMa
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(text='Купить подписку', callback_data='buy_sub')
-            ]]
+            ], [InlineKeyboardButton(text='Назад', callback_data='close_widget')]]
         )
         await msg.answer('Эта функция доступна по подписке', reply_markup=keyboard)
         return
@@ -192,7 +192,7 @@ async def get_image(msg: Message, widget: MessageInput, dialog_manager: DialogMa
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
-            ]]
+            ], [InlineKeyboardButton(text='Назад', callback_data='close_widget')]]
         )
         await msg.answer('К сожалению не хватает генераций для примерки', reply_markup=keyboard)
         return
@@ -211,7 +211,7 @@ async def get_image_link(msg: Message, widget: ManagedTextInput, dialog_manager:
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
-            ]]
+            ], [InlineKeyboardButton(text='Назад', callback_data='close_widget')]]
         )
         await msg.answer('К сожалению у вас не достаточно генераций для добавления заднего фона', reply_markup=keyboard)
         return
@@ -220,7 +220,7 @@ async def get_image_link(msg: Message, widget: ManagedTextInput, dialog_manager:
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(text='Купить подписку', callback_data='buy_sub')
-            ]]
+            ], [InlineKeyboardButton(text='Назад', callback_data='close_widget')]]
         )
         await msg.answer('Эта функция доступна по подписке', reply_markup=keyboard)
         return
@@ -228,7 +228,7 @@ async def get_image_link(msg: Message, widget: ManagedTextInput, dialog_manager:
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
-            ]]
+            ], [InlineKeyboardButton(text='Назад', callback_data='close_widget')]]
         )
         await msg.answer('К сожалению не хватает генераций для примерки', reply_markup=keyboard)
         return
@@ -244,7 +244,7 @@ async def get_bg_image_switcher(clb: CallbackQuery, widget: Button, dialog_manag
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
-            ]]
+            ], [InlineKeyboardButton(text='Назад', callback_data='close_widget')]]
         )
         await clb.message.answer('К сожалению у вас не достаточно генераций для добавления заднего фона', reply_markup=keyboard)
         return
@@ -253,7 +253,7 @@ async def get_bg_image_switcher(clb: CallbackQuery, widget: Button, dialog_manag
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(text='Купить подписку', callback_data='buy_sub')
-            ]]
+            ], [InlineKeyboardButton(text='Назад', callback_data='close_widget')]]
         )
         await clb.message.answer('Эта функция доступна по подписке', reply_markup=keyboard)
         return
@@ -261,7 +261,7 @@ async def get_bg_image_switcher(clb: CallbackQuery, widget: Button, dialog_manag
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
-            ]]
+            ], [InlineKeyboardButton(text='Назад', callback_data='close_widget')]]
         )
         await clb.message.answer('К сожалению не хватает генераций для примерки', reply_markup=keyboard)
         return
@@ -302,7 +302,7 @@ async def add_photo_switcher(clb: CallbackQuery, widget: Button, dialog_manager:
             keyboard = InlineKeyboardMarkup(
                 inline_keyboard=[[
                     InlineKeyboardButton(text='Купить подписку', callback_data='buy_sub')
-                ]]
+                ], [InlineKeyboardButton(text='Назад', callback_data='close_widget')]]
             )
             await clb.message.answer('Больше фото при подписке на бота', reply_markup=keyboard)
             return

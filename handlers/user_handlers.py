@@ -1,7 +1,7 @@
 from aiogram import Router, F, Bot
 from aiogram.filters import CommandStart, CommandObject
 from aiogram.types import Message, CallbackQuery
-from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog import DialogManager, StartMode, ShowMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from database.action_data_class import DataInteraction
@@ -46,6 +46,11 @@ async def start_dialog(msg: Message, dialog_manager: DialogManager, session: Dat
 async def start_buy_gens(clb: CallbackQuery, dialog_manager: DialogManager):
     data = clb.data.split('_')
     if data[1].startswith('gen'):
-        await dialog_manager.start(profileSG.generations_menu, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(profileSG.generations_menu, mode=StartMode.NORMAL)
     else:
-        await dialog_manager.start(profileSG.choose_sub_menu, mode=StartMode.RESET_STACK)
+        await dialog_manager.start(profileSG.choose_sub_menu, mode=StartMode.NORMAL)
+
+
+@user_router.callback_query(F.data == 'close_widget')
+async def del_widget_message(clb: CallbackQuery, dialog_manager: DialogManager):
+    await clb.message.delete()

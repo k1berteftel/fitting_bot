@@ -189,7 +189,7 @@ async def choose_category(clb: CallbackQuery, widget: Button, dialog_manager: Di
         keyboard = InlineKeyboardMarkup(
             inline_keyboard=[[
                 InlineKeyboardButton(text='Купить генерации', callback_data='buy_generations')
-            ]]
+            ], [InlineKeyboardButton(text='Назад', callback_data='close_widget')]]
         )
         await clb.message.answer(
             'К сожалению у Вас нет доступных генераций для замены',
